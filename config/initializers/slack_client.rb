@@ -1,0 +1,1 @@
+$slack_client = Slack::Web::Client.new(token: ENV['SLACK_API_TOKEN']) 
