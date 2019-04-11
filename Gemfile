@@ -9,10 +9,7 @@ gem 'redis'
 gem 'pry', require: false
 gem 'mock_redis'
 gem 'foreman'
-
-group :development, :test do
-  gem 'rake'
-end
+gem 'rake'
 
 group :test do
   gem 'rspec'
