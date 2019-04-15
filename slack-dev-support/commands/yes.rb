@@ -10,9 +10,11 @@ module SlackDevSupport
 
         members = Redis.current.lrange('not_applicable', 0, 200)
 
-        Redis.current.del('not_applicable')
+        if members.any?
+          Redis.current.del('not_applicable')
 
-        Redis.current.rpush('users', members)
+          Redis.current.rpush('users', members)
+        end
 
         client.say(channel: data.channel, text: "<@#{selected}> is on dev support today!")
       end
