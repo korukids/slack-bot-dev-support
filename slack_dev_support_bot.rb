@@ -8,9 +8,5 @@ end
 require './slack-dev-support/bot'
 require './slack-dev-support/commands/register'
 require './slack-dev-support/commands/unregister'
-require './slack-dev-support/commands/set_time'
-require './slack-dev-support/commands/no'
-require './slack-dev-support/commands/yes'
-require './slack-dev-support/commands/rotate'
+require './slack-dev-support/commands/next'
 require './slack-dev-support/commands/list'
-

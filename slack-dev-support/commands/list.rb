@@ -4,7 +4,11 @@ module SlackDevSupport
       command 'list' do |client, data, _match|
         members = Redis.current.lrange('users', 0, 200)
 
-        formatted_members = members.map{|member| "<@#{member}>"}.reverse
+        not_applicable_members = Redis.current.lrange('not_applicable', 0, 200)
+
+        all_members = not_applicable_members + members
+
+        formatted_members = all_members.map{|member| "<@#{member}>"}
 
         joined_members = formatted_members.join(', ')
 
@@ -13,4 +17,3 @@ module SlackDevSupport
     end
   end
 end
-
