@@ -17,6 +17,6 @@ describe SlackDevSupport::Commands::List do
   end
 
   it 'returns only a message' do
-    expect(message: "#{SlackRubyBot.config.user} list", channel: 'channel').to respond_with_slack_message("The current rotation is <@user_5>, <@user_4>, <@user_3>, <@user_2>, <@user_1>")
+    expect(message: "#{SlackRubyBot.config.user} list", channel: 'channel').to respond_with_slack_message("The current list is <@user_5>, <@user_4>, <@user_3>, <@user_2>, <@user_1>")
   end
 end

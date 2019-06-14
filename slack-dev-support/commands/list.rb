@@ -12,7 +12,7 @@ module SlackDevSupport
 
         joined_members = formatted_members.join(', ')
 
-        client.say(channel: data.channel, text: "The current rotation is #{joined_members}")
+        client.say(channel: data.channel, text: "The current list is #{joined_members}")
       end
     end
   end
