@@ -15,10 +15,12 @@ module SlackDevSupport
 
       command 'register' do
         desc 'Use this to register for dev-support'
+        long_desc 'You can run this command with a target, for example "dev-support register @Frank"'
       end
 
       command 'unregister' do
         desc 'Use this to unregister for dev-support'
+        long_desc 'You can run this command with a target, for example "dev-support unregister @Frank"'
       end
     end
   end
