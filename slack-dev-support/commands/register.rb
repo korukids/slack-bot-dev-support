@@ -7,7 +7,7 @@ module SlackDevSupport
           if Redis.current.lrange('users', 0, 200).include?(data.user)
             client.say(channel: data.channel, text: "You've already registered <@#{data.user}>!")
           else
-            Redis.current.rpush('users', data.user)
+            Redis.current.lpush('users', data.user)
             client.say(channel: data.channel, text: "Thanks for registering <@#{data.user}>!")
           end
         else
@@ -16,7 +16,7 @@ module SlackDevSupport
           if Redis.current.lrange('users', 0, 200).include?(target)
             client.say(channel: data.channel, text: "<@#{target}> has already been registed!")
           else
-            Redis.current.rpush('users', target)
+            Redis.current.lpush('users', target)
             client.say(channel: data.channel, text: "Thanks for registering <@#{target}>!")
           end
         end
