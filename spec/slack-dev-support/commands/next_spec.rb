@@ -25,7 +25,8 @@ describe SlackDevSupport::Commands::Next do
     end
 
     it 'reurns a message informing the user there are no more people to choose form' do
-      expect(message: "#{SlackRubyBot.config.user} next", channel: 'channel').to respond_with_slack_message("There are no more people on the list")
+      expect(message: "#{SlackRubyBot.config.user} next", channel: 'channel')
+        .to respond_with_slack_message("There are no more people on the list, <@user_1> is the last developer standing.")
     end
   end
 end

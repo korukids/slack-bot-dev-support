@@ -8,37 +8,20 @@ GEM
       tzinfo (~> 1.1)
     addressable (2.6.0)
       public_suffix (>= 2.0.2, < 4.0)
-    celluloid (0.17.4)
-      celluloid-essentials
-      celluloid-extras
-      celluloid-fsm
-      celluloid-pool
-      celluloid-supervision
-      timers (>= 4.1.1)
-    celluloid-essentials (0.20.5)
-      timers (>= 4.1.1)
-    celluloid-extras (0.20.5)
-      timers (>= 4.1.1)
-    celluloid-fsm (0.20.5)
-      timers (>= 4.1.1)
-    celluloid-io (0.17.3)
-      celluloid (>= 0.17.2)
-      nio4r (>= 1.1)
-      timers (>= 4.1.1)
-    celluloid-pool (0.20.5)
-      timers (>= 4.1.1)
-    celluloid-supervision (0.20.6)
-      timers (>= 4.1.1)
     coderay (1.1.2)
     concurrent-ruby (1.1.5)
     crack (0.4.3)
       safe_yaml (~> 1.0.0)
     diff-lcs (1.3)
     dotenv (2.7.2)
+    eventmachine (1.2.7)
     faraday (0.15.4)
       multipart-post (>= 1.2, < 3)
     faraday_middleware (0.13.1)
       faraday (>= 0.7.4, < 1.0)
+    faye-websocket (0.10.9)
+      eventmachine (>= 0.12.0)
+      websocket-driver (>= 0.5.1)
     foreman (0.82.0)
       thor (~> 0.19.1)
     gli (2.18.0)
@@ -51,7 +34,6 @@ GEM
     mock_redis (0.16.1)
     multipart-post (2.0.0)
     mustermann (1.0.3)
-    nio4r (2.3.1)
     pry (0.12.2)
       coderay (~> 1.1.0)
       method_source (~> 0.9.0)
@@ -96,7 +78,6 @@ GEM
     thor (0.19.4)
     thread_safe (0.3.6)
     tilt (2.0.9)
-    timers (4.3.0)
     tzinfo (1.2.5)
       thread_safe (~> 0.1)
     vcr (4.0.0)
@@ -112,8 +93,8 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  celluloid-io
   dotenv
+  faye-websocket
   foreman
   mock_redis
   pry

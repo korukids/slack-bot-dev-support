@@ -4,7 +4,7 @@ gem 'slack-ruby-bot'
 gem 'puma'
 gem 'sinatra'
 gem 'dotenv'
-gem 'celluloid-io'
+gem 'faye-websocket'
 gem 'redis'
 gem 'pry', require: false
 gem 'mock_redis'
