@@ -16,7 +16,11 @@ module SlackDevSupport
 
           client.say(channel: data.channel, text: "<@#{members.last}> is on dev-support")
         else
-          client.say(channel: data.channel, text: "There are no more people on the list")
+          last_dev_standing = Redis.current.lrange('users', 0, 200).last
+          client.say(
+            channel: data.channel,
+            text: "There are no more people on the list, <@#{last_dev_standing}> is the last developer standing."
+          )
         end
       end
     end

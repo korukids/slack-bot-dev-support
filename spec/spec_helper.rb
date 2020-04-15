@@ -1,5 +1,9 @@
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..'))
 
+# Load environment variables
+require 'dotenv'
+Dotenv.load('.env.test')
+
 require 'slack-ruby-bot/rspec'
 require 'slack_dev_support_bot'
 
