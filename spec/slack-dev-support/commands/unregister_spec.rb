@@ -1,6 +1,8 @@
 require 'spec_helper'
 
 describe SlackDevSupport::Commands::Unregister do
+  CHANNEL_NAME = 'channel'
+
   def app
     SlackDevSupport::Bot.instance
   end
@@ -9,17 +11,17 @@ describe SlackDevSupport::Commands::Unregister do
 
   context 'when the user is not registered' do
     it 'tells the user they are not registered' do
-      expect(message: "#{SlackRubyBot.config.user} unregister", channel: 'channel').to respond_with_slack_message("You're not registered?")
+      expect(message: "#{SlackRubyBot.config.user} unregister", channel: CHANNEL_NAME).to respond_with_slack_message("You're not registered?")
     end
   end
 
   context 'when the user is registered' do
     before do
-      Redis.current.lpush('users', 'user')
+      Redis.current.lpush("#{CHANNEL_NAME}_users", 'user')
     end
 
     it 'it unregisters them and returns a message' do
-      expect(message: "#{SlackRubyBot.config.user} unregister", channel: 'channel').to respond_with_slack_message("You've been removed from dev support <@user>.")
+      expect(message: "#{SlackRubyBot.config.user} unregister", channel: CHANNEL_NAME).to respond_with_slack_message("You've been removed from dev support <@user>.")
     end
   end
 end

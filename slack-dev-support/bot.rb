@@ -26,18 +26,38 @@ module SlackDevSupport
   end
 
   def self.assign
-    Redis.current.rpoplpush('users', 'users')
+    DEVELOPER_USERS_KEY = 'developer_users'
+    DEVELOPER_UNAVAILABLE_USERS_KEY = 'developer_not_applicable'
 
-    yesterdays_not_applicable = Redis.current.lrange('not_applicable', 0, 200)
+    $slack_client.chat_postMessage(
+      channel: $channel,
+      text: "<@#{select_user(DEVELOPER_USERS_KEY, DEVELOPER_UNAVAILABLE_USERS_KEY)}> is on dev support today!"
+    )
+  end
 
-    yesterdays_not_applicable.each do |user|
-      Redis.current.rpush('users', user)
+  def self.assign_product_design_chair
+    PRODUCT_DESIGN_USERS_KEY = 'productdesign_users'
+    PRODUCT_DESIGN_USERS_UNAVAILABLE_USERS_KEY = 'productdesign_not_applicable'
+
+    $slack_client.chat_postMessage(
+      channel: $product_design_channel,
+      text: "<@#{select_user(PRODUCT_DESIGN_USERS_KEY, PRODUCT_DESIGN_USERS_UNAVAILABLE_USERS_KEY)}> is the product chair today!"
+    )
+  end
+
+  private
+
+  def self.select_user(users, unavailable_users)
+    Redis.current.rpoplpush(DEVELOPER_USERS_KEY, DEVELOPER_USERS_KEY)
+
+    previously_not_applicable = Redis.current.lrange(DEVELOPER_UNAVAILABLE_USERS_KEY, 0, 200)
+
+    previously_not_applicable.each do |user|
+      Redis.current.rpush(DEVELOPER_USERS_KEY, user)
     end
 
-    Redis.current.del('not_applicable')
+    Redis.current.del(DEVELOPER_UNAVAILABLE_USERS_KEY)
 
-    selected = Redis.current.lrange('users', 0, 200).last
-
-    $slack_client.chat_postMessage(channel: $channel, text: "<@#{selected}> is on dev support today!")
+    selected = Redis.current.lrange(DEVELOPER_USERS_KEY, 0, 200).last
   end
 end

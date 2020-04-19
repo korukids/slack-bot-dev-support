@@ -2,9 +2,11 @@ module SlackDevSupport
   module Commands
     class List < SlackRubyBot::Commands::Base
       command 'list' do |client, data, _match|
-        members = Redis.current.lrange('users', 0, 200)
+        USERS_KEY = "#{data.channel}_users"
+        UNAVAILABLE_USERS_KEY = "#{data.channel}_not_applicable"
+        members = Redis.current.lrange(USERS_KEY, 0, 200)
 
-        not_applicable_members = Redis.current.lrange('not_applicable', 0, 200)
+        not_applicable_members = Redis.current.lrange(UNAVAILABLE_USERS_KEY, 0, 200)
 
         all_members = not_applicable_members + members
 
