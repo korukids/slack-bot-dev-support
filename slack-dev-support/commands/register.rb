@@ -1,25 +1,13 @@
+require_relative '../models/user_register'
+
 module SlackDevSupport
   module Commands
     class Register < SlackRubyBot::Commands::Base
       command 'register' do |client, data, match|
+        target = match['expression'].present? ? match['expression'].delete('<>@') : data.user
 
-        if !match['expression'].present?
-          if Redis.current.lrange('users', 0, 200).include?(data.user)
-            client.say(channel: data.channel, text: "You've already registered <@#{data.user}>!")
-          else
-            Redis.current.lpush('users', data.user)
-            client.say(channel: data.channel, text: "Thanks for registering <@#{data.user}>!")
-          end
-        else
-          target = match['expression'].delete('<>@')
-
-          if Redis.current.lrange('users', 0, 200).include?(target)
-            client.say(channel: data.channel, text: "<@#{target}> has already been registed!")
-          else
-            Redis.current.lpush('users', target)
-            client.say(channel: data.channel, text: "Thanks for registering <@#{target}>!")
-          end
-        end
+        message = UserRegister.add(user: target, channel: data.channel)
+        client.say(channel: data.channel, text: message)
       end
     end
   end
