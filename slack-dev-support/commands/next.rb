@@ -9,14 +9,12 @@ module SlackDevSupport
       end
 
       command 'next' do |client, data, _match|
-        if Redis.current.lrange('users', 0, 200).count > 1
-          Redis.current.rpoplpush('users', 'not_applicable')
+        next_user = UserRegister.skip(channel: data.channel)
 
-          members = Redis.current.lrange('users', 0, 200)
-
-          client.say(channel: data.channel, text: "<@#{members.last}> is on dev-support")
+        if next_user
+          client.say(channel: data.channel, text: "<@#{next_user}> is on dev-support")
         else
-          last_dev_standing = Redis.current.lrange('users', 0, 200).last
+          last_dev_standing = UserRegister.list(channel: data.channel).last
           client.say(
             channel: data.channel,
             text: "There are no more people on the list, <@#{last_dev_standing}> is the last developer standing."

@@ -9,9 +9,9 @@ describe SlackDevSupport::Commands::Next do
 
   context 'when there are enough users to use the command next' do
     before do
-      Redis.current.lpush('users', 'user_1')
-      Redis.current.lpush('users', 'user_2')
-      Redis.current.lpush('users', 'user_3')
+      Redis.current.lpush('channel_users', 'user_1')
+      Redis.current.lpush('channel_users', 'user_2')
+      Redis.current.lpush('channel_users', 'user_3')
     end
 
     it 'returns a prompt suggesting another user' do
@@ -21,7 +21,7 @@ describe SlackDevSupport::Commands::Next do
 
   context 'when there are not enough users to use the command next' do
     before do
-      Redis.current.lpush('users', 'user_1')
+      Redis.current.lpush('channel_users', 'user_1')
     end
 
     it 'reurns a message informing the user there are no more people to choose form' do

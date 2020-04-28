@@ -10,6 +10,16 @@ class UserRegister
     self.list_not_applicable(channel: channel) + self.list_active(channel: channel)
   end
 
+  def self.skip(channel:)
+    channel_list = self.list(channel: channel)
+    return unless channel_list.count > 1
+
+    Redis.current.rpoplpush("#{channel}_users", "#{channel}_not_applicable")
+
+    cycled_list = self.list(channel: channel)
+    cycled_list.last
+  end
+
   private
 
   def self.list_active(channel:)
