@@ -7,10 +7,18 @@ class UserRegister
   end
 
   def self.list(channel:)
-    Redis.current.lrange("#{channel}_users", 0, 200)
+    self.list_not_applicable(channel: channel) + self.list_active(channel: channel)
   end
 
   private
+
+  def self.list_active(channel:)
+    Redis.current.lrange("#{channel}_users", 0, 200)
+  end
+
+  def self.list_not_applicable(channel:)
+    Redis.current.lrange("#{channel}_not_applicable", 0, 200)
+  end
 
   def self.user_registered?(channel, user)
     self.list(channel: channel).include?(user)
