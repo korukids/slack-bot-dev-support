@@ -1,5 +1,7 @@
 module SlackDevSupport
   class Bot < SlackRubyBot::Bot
+    DEVELOPER_CHANNEL= 'GB66FUL2H'
+    PRODUCT_DESIGN_CHANNEL = 'CG4VDUZ2L'
     help do
       title 'dev-support bot'
       desc 'This bot assigns a dev to the dev-support channel every morning'
@@ -26,18 +28,34 @@ module SlackDevSupport
   end
 
   def self.assign
-    Redis.current.rpoplpush('users', 'users')
+    Redis.current.rpoplpush("#{DEVELOPER_CHANNEL}_users", "#{DEVELOPER_CHANNEL}_users")
 
-    yesterdays_not_applicable = Redis.current.lrange('not_applicable', 0, 200)
+    yesterdays_not_applicable = Redis.current.lrange("#{DEVELOPER_CHANNEL}_not_applicable", 0, 200)
 
     yesterdays_not_applicable.each do |user|
-      Redis.current.rpush('users', user)
+      Redis.current.rpush("#{DEVELOPER_CHANNEL}_users", user)
     end
 
-    Redis.current.del('not_applicable')
+    Redis.current.del("#{DEVELOPER_CHANNEL}_not_applicable")
 
-    selected = Redis.current.lrange('users', 0, 200).last
+    selected = Redis.current.lrange("#{DEVELOPER_CHANNEL}_users", 0, 200).last
 
     $slack_client.chat_postMessage(channel: $channel, text: "<@#{selected}> is on dev support today!")
+  end
+
+  def self.assign_prod_design
+    Redis.current.rpoplpush("#{PRODUCT_DESIGN_CHANNEL}_users", "#{PRODUCT_DESIGN_CHANNEL}_users")
+
+    yesterdays_not_applicable = Redis.current.lrange("#{PRODUCT_DESIGN_CHANNEL}_not_applicable", 0, 200)
+
+    yesterdays_not_applicable.each do |user|
+      Redis.current.rpush("#{PRODUCT_DESIGN_CHANNEL}_users", user)
+    end
+
+    Redis.current.del("#{PRODUCT_DESIGN_CHANNEL}_not_applicable")
+
+    selected = Redis.current.lrange("#{PRODUCT_DESIGN_CHANNEL}_users", 0, 200).last
+
+    $slack_client.chat_postMessage(channel: $channel, text: "<@#{selected}> is your chair today!")
   end
 end
