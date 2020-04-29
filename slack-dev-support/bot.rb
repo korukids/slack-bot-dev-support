@@ -1,7 +1,8 @@
 module SlackDevSupport
+  DEVELOPER_CHANNEL= 'GB66FUL2H'
+  PRODUCT_DESIGN_CHANNEL = 'CG4VDUZ2L'
+
   class Bot < SlackRubyBot::Bot
-    DEVELOPER_CHANNEL= 'GB66FUL2H'
-    PRODUCT_DESIGN_CHANNEL = 'CG4VDUZ2L'
     help do
       title 'dev-support bot'
       desc 'This bot assigns a dev to the dev-support channel every morning'
@@ -56,6 +57,6 @@ module SlackDevSupport
 
     selected = Redis.current.lrange("#{PRODUCT_DESIGN_CHANNEL}_users", 0, 200).last
 
-    $slack_client.chat_postMessage(channel: $channel, text: "<@#{selected}> is your chair today!")
+    $slack_client.chat_postMessage(channel: $prod_design_channel, text: "<@#{selected}> is your chair today!")
   end
 end
