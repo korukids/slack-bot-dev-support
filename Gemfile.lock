@@ -9,6 +9,7 @@ GEM
       zeitwerk (~> 2.2, >= 2.2.2)
     addressable (2.6.0)
       public_suffix (>= 2.0.2, < 4.0)
+    ast (2.4.2)
     coderay (1.1.2)
     concurrent-ruby (1.1.6)
     crack (0.4.3)
@@ -35,6 +36,9 @@ GEM
     mock_redis (0.16.1)
     multipart-post (2.0.0)
     mustermann (1.0.3)
+    parallel (1.20.1)
+    parser (3.0.1.0)
+      ast (~> 2.4.1)
     pry (0.12.2)
       coderay (~> 1.1.0)
       method_source (~> 0.9.0)
@@ -45,8 +49,11 @@ GEM
       rack
     rack-test (1.1.0)
       rack (>= 1.0, < 3)
+    rainbow (3.0.0)
     rake (12.3.3)
     redis (4.1.0)
+    regexp_parser (2.1.1)
+    rexml (3.2.5)
     rspec (3.8.0)
       rspec-core (~> 3.8.0)
       rspec-expectations (~> 3.8.0)
@@ -60,6 +67,18 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.8.0)
     rspec-support (3.8.0)
+    rubocop (1.12.1)
+      parallel (~> 1.10)
+      parser (>= 3.0.0.0)
+      rainbow (>= 2.2.2, < 4.0)
+      regexp_parser (>= 1.8, < 3.0)
+      rexml
+      rubocop-ast (>= 1.2.0, < 2.0)
+      ruby-progressbar (~> 1.7)
+      unicode-display_width (>= 1.4.0, < 3.0)
+    rubocop-ast (1.4.1)
+      parser (>= 2.7.1.5)
+    ruby-progressbar (1.11.0)
     safe_yaml (1.0.5)
     sinatra (2.0.5)
       mustermann (~> 1.0)
@@ -81,6 +100,7 @@ GEM
     tilt (2.0.9)
     tzinfo (1.2.7)
       thread_safe (~> 0.1)
+    unicode-display_width (2.0.0)
     vcr (4.0.0)
     webmock (3.5.1)
       addressable (>= 2.3.6)
@@ -105,6 +125,7 @@ DEPENDENCIES
   rake
   redis
   rspec
+  rubocop
   sinatra
   slack-ruby-bot
   vcr

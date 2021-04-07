@@ -9,7 +9,8 @@ describe SlackDevSupport::Commands::Unregister do
 
   context 'when the user is not registered' do
     it 'tells the user they are not registered' do
-      expect(message: "#{SlackRubyBot.config.user} unregister", channel: 'channel').to respond_with_slack_message("You're not registered?")
+      expect(message: "#{SlackRubyBot.config.user} unregister", channel: 'channel')
+        .to respond_with_slack_message("You're not registered?")
     end
   end
 
@@ -19,7 +20,8 @@ describe SlackDevSupport::Commands::Unregister do
     end
 
     it 'it unregisters them and returns a message' do
-      expect(message: "#{SlackRubyBot.config.user} unregister", channel: 'channel').to respond_with_slack_message("You've been removed from dev support <@user>.")
+      expect(message: "#{SlackRubyBot.config.user} unregister", channel: 'channel')
+        .to respond_with_slack_message("You've been removed from dev support <@user>.")
     end
   end
 end

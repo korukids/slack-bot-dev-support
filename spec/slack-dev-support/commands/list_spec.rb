@@ -18,7 +18,7 @@ describe SlackDevSupport::Commands::List do
 
   it 'returns only a message' do
     expect(message: "#{SlackRubyBot.config.user} list", channel: 'channel')
-      .to respond_with_slack_message("The current list is <@user_5>, <@user_4>, <@user_3>, <@user_2>, <@user_1>")
+      .to respond_with_slack_message('The current list is <@user_5>, <@user_4>, <@user_3>, <@user_2>, <@user_1>')
   end
 
   it 'returns the list specific to that channel' do
@@ -26,6 +26,6 @@ describe SlackDevSupport::Commands::List do
     Redis.current.lpush('channel2_users', 'Bob')
 
     expect(message: "#{SlackRubyBot.config.user} list", channel: 'channel2')
-        .to respond_with_slack_message("The current list is <@Bob>, <@Alice>")
+      .to respond_with_slack_message('The current list is <@Bob>, <@Alice>')
   end
 end

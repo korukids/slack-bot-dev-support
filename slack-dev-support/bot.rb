@@ -1,5 +1,5 @@
 module SlackDevSupport
-  DEVELOPER_CHANNEL= 'GB66FUL2H'
+  DEVELOPER_CHANNEL = 'GB66FUL2H'
   PRODUCT_DESIGN_CHANNEL = 'CG4VDUZ2L'
 
   class Bot < SlackRubyBot::Bot
