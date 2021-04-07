@@ -41,3 +41,8 @@ Removes a developer perminently from the roster.
 
 ### help
 Lists all available commands.
+
+## How to develop
+
+### Test
+run `rspec` to run tests in the project
