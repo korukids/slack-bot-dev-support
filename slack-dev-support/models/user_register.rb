@@ -6,6 +6,15 @@ class UserRegister
     "Thanks for registering <@#{user}>!"
   end
 
+  def self.remove(user:, channel:)
+    return "<@#{user}> is not registered" unless self.list(channel: channel).include?(user)
+
+    list_with_user = self.list_not_applicable(channel: channel).include?(user) ?
+      "#{channel}_not_applicable" : "#{channel}_users"
+    Redis.current.lrem(list_with_user, 0, user)
+    "<@#{user}> has been deregistered"
+  end
+
   def self.list(channel:)
     list_not_applicable(channel: channel) + list_active(channel: channel)
   end

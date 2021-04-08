@@ -7,6 +7,6 @@ end
 
 require './slack-dev-support/bot'
 require './slack-dev-support/commands/register'
-require './slack-dev-support/commands/unregister'
+require './slack-dev-support/commands/deregister'
 require './slack-dev-support/commands/next'
 require './slack-dev-support/commands/list'

@@ -49,4 +49,44 @@ describe UserRegister do
       expect(list).to contain_exactly('user_1', 'user_2', 'user_3', 'user_4')
     end
   end
+
+  describe '.deregister' do
+    it 'deregisters a user from the channel' do
+      user = 'user_1'
+      channel_name = 'channel_1'
+      described_class.add(user: user, channel: channel_name)
+
+      described_class.remove(user: user, channel: channel_name)
+
+      expect(described_class.list(channel: channel_name)).not_to include(user)
+    end
+
+    it 'returns "User has been deregisterd"' do
+      user = 'user_1'
+      channel_name = 'channel_1'
+      described_class.add(user: user, channel: channel_name)
+
+      expect(described_class.remove(user: user, channel: channel_name))
+        .to eq("<@user_1> has been deregistered")
+    end
+
+    it 'deregisters a user after they have been skipped' do
+      user = 'user_1'
+      channel_name = 'channel_1'
+      described_class.add(user: user, channel: channel_name)
+      described_class.skip(channel: channel_name)
+
+      described_class.remove(user: user, channel: channel_name)
+
+      expect(described_class.list(channel: channel_name)).to be_empty
+    end
+
+    it 'reports that the user is not listed if they cannot be found' do
+      user = 'user_1'
+      channel_name = 'channel_1'
+
+      expect(described_class.remove(user: user, channel: channel_name))
+        .to eq("<@user_1> is not registered")
+    end
+  end
 end

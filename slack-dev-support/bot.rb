@@ -21,9 +21,9 @@ module SlackDevSupport
         long_desc 'You can run this command with a target, for example "dev-support register @Frank"'
       end
 
-      command 'unregister' do
-        desc 'Use this to unregister for dev-support'
-        long_desc 'You can run this command with a target, for example "dev-support unregister @Frank"'
+      command 'deregister' do
+        desc 'Use this to deregister for dev-support'
+        long_desc 'You can run this command with a target, for example "dev-support deregister @Frank"'
       end
     end
   end

@@ -23,20 +23,20 @@ Skips the developer assigned to developer support today. They will be assigned a
 08:31 Developer Support: @IceKing is on dev-support
 ```
 
-### register
+### register @user
 Adds a new developer to the back of the roster queue.
 
 ```
-08:31 Jake The Human: @Developer Support unregister @Prismo
+08:31 Jake The Human: @Developer Support register @Prismo
 08:31 Developer Support: Thanks for registering @Prismo!
 ```
 
-### unregister
-Removes a developer perminently from the roster.
+### deregister [@user]
+Removes you (if no @user provided) or a given developer permanently from the roster.
 
 ```
-08:31 Jake The Human: @Developer Support unregister @BMO
-08:31 Developer Support: Thanks for unregistering @BMO
+08:31 Jake The Human: @Developer Support deregister @BMO
+08:31 Developer Support: @BMO has been deregistered
 ```
 
 ### help
