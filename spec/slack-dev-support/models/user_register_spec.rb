@@ -6,7 +6,7 @@ describe UserRegister do
     it 'registers a user on a channels list' do
       user = 'user_1'
       channel_name = 'channel_1'
-      described_class.add(user: user, channel: channel_name)
+      described_class.add(user:, channel: channel_name)
 
       expect(described_class.list(channel: channel_name)).to include(user)
     end
@@ -14,7 +14,7 @@ describe UserRegister do
     it 'returns "thanks for registering" if the user is not on the register' do
       user = 'user_1'
       channel_name = 'channel_1'
-      response = described_class.add(user: user, channel: channel_name)
+      response = described_class.add(user:, channel: channel_name)
 
       expect(response).to eq('Thanks for registering <@user_1>!')
     end
@@ -23,7 +23,7 @@ describe UserRegister do
       user = 'user_1'
       channel_1_name = 'channel_1'
       channel_2_name = 'channel_2'
-      described_class.add(user: user, channel: channel_1_name)
+      described_class.add(user:, channel: channel_1_name)
 
       expect(described_class.list(channel: channel_2_name)).not_to include(user)
     end
@@ -31,9 +31,9 @@ describe UserRegister do
     it 'returns "you have already registered" if the user already exists on the register' do
       user = 'user_1'
       channel_name = 'channel_1'
-      described_class.add(user: user, channel: channel_name)
+      described_class.add(user:, channel: channel_name)
 
-      expect(described_class.add(user: user, channel: channel_name)).to eq("You've already registered <@user_1>!")
+      expect(described_class.add(user:, channel: channel_name)).to eq("You've already registered <@user_1>!")
     end
   end
 
@@ -54,9 +54,9 @@ describe UserRegister do
     it 'deregisters a user from the channel' do
       user = 'user_1'
       channel_name = 'channel_1'
-      described_class.add(user: user, channel: channel_name)
+      described_class.add(user:, channel: channel_name)
 
-      described_class.remove(user: user, channel: channel_name)
+      described_class.remove(user:, channel: channel_name)
 
       expect(described_class.list(channel: channel_name)).not_to include(user)
     end
@@ -64,19 +64,19 @@ describe UserRegister do
     it 'returns "User has been deregisterd"' do
       user = 'user_1'
       channel_name = 'channel_1'
-      described_class.add(user: user, channel: channel_name)
+      described_class.add(user:, channel: channel_name)
 
-      expect(described_class.remove(user: user, channel: channel_name))
-        .to eq("<@user_1> has been deregistered")
+      expect(described_class.remove(user:, channel: channel_name))
+        .to eq('<@user_1> has been deregistered')
     end
 
     it 'deregisters a user after they have been skipped' do
       user = 'user_1'
       channel_name = 'channel_1'
-      described_class.add(user: user, channel: channel_name)
+      described_class.add(user:, channel: channel_name)
       described_class.skip(channel: channel_name)
 
-      described_class.remove(user: user, channel: channel_name)
+      described_class.remove(user:, channel: channel_name)
 
       expect(described_class.list(channel: channel_name)).to be_empty
     end
@@ -85,8 +85,8 @@ describe UserRegister do
       user = 'user_1'
       channel_name = 'channel_1'
 
-      expect(described_class.remove(user: user, channel: channel_name))
-        .to eq("<@user_1> is not registered")
+      expect(described_class.remove(user:, channel: channel_name))
+        .to eq('<@user_1> is not registered')
     end
   end
 end

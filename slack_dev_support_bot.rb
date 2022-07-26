@@ -1,7 +1,7 @@
 require 'redis'
 require 'slack-ruby-bot'
 
-Dir[File.expand_path('config/initializers', __dir__) + '/**/*.rb'].each do |file|
+Dir["#{File.expand_path('config/initializers', __dir__)}/**/*.rb"].each do |file|
   require file
 end
 

@@ -10,7 +10,7 @@ require 'slack-ruby-bot/rspec'
 require 'slack_dev_support_bot'
 
 RSpec.configure do |config|
-  config.before(:each) do
+  config.before do
     Redis.current.flushdb
   end
 end

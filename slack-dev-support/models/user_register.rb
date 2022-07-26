@@ -7,25 +7,28 @@ class UserRegister
   end
 
   def self.remove(user:, channel:)
-    return "<@#{user}> is not registered" unless self.list(channel: channel).include?(user)
+    return "<@#{user}> is not registered" unless list(channel:).include?(user)
 
-    list_with_user = self.list_not_applicable(channel: channel).include?(user) ?
-      "#{channel}_not_applicable" : "#{channel}_users"
+    list_with_user = if list_not_applicable(channel:).include?(user)
+                       "#{channel}_not_applicable"
+                     else
+                       "#{channel}_users"
+                     end
     Redis.current.lrem(list_with_user, 0, user)
     "<@#{user}> has been deregistered"
   end
 
   def self.list(channel:)
-    list_not_applicable(channel: channel) + list_active(channel: channel)
+    list_not_applicable(channel:) + list_active(channel:)
   end
 
   def self.skip(channel:)
-    channel_list = list(channel: channel)
+    channel_list = list(channel:)
     return unless channel_list.count > 1
 
     Redis.current.rpoplpush("#{channel}_users", "#{channel}_not_applicable")
 
-    cycled_list = list(channel: channel)
+    cycled_list = list(channel:)
     cycled_list.last
   end
 
@@ -38,6 +41,6 @@ class UserRegister
   end
 
   def self.user_registered?(channel, user)
-    list(channel: channel).include?(user)
+    list(channel:).include?(user)
   end
 end

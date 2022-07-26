@@ -9,13 +9,11 @@ require 'web'
 Thread.abort_on_exception = true
 
 Thread.new do
-  begin
-    SlackDevSupport::Bot.run
-  rescue Exception => e
-    STDERR.puts "ERROR: #{e}"
-    STDERR.puts e.backtrace
-    raise e
-  end
+  SlackDevSupport::Bot.run
+rescue Exception => e
+  warn "ERROR: #{e}"
+  warn e.backtrace
+  raise e
 end
 
 run SlackDevSupport::Web

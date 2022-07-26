@@ -14,7 +14,7 @@ describe SlackDevSupport::Commands::Deregister do
 
     it 'removes the user' do
       expect(message: "#{SlackRubyBot.config.user} deregister <@user>", channel: 'users')
-        .to respond_with_slack_message("<@user> has been deregistered")
+        .to respond_with_slack_message('<@user> has been deregistered')
     end
   end
 
@@ -23,9 +23,9 @@ describe SlackDevSupport::Commands::Deregister do
       Redis.current.lpush('users_users', 'user')
     end
 
-    it 'it deregisters them and returns a message' do
+    it 'deregisters them and returns a message' do
       expect(message: "#{SlackRubyBot.config.user} deregister", channel: 'users')
-        .to respond_with_slack_message("<@user> has been deregistered")
+        .to respond_with_slack_message('<@user> has been deregistered')
     end
   end
 end
