@@ -53,7 +53,7 @@ GEM
     minitest (5.16.2)
     mock_redis (0.16.1)
     multipart-post (2.2.3)
-    mustermann (1.1.1)
+    mustermann (2.0.2)
       ruby2_keywords (~> 0.0.1)
     nio4r (2.5.8)
     parallel (1.22.1)
@@ -65,8 +65,8 @@ GEM
     public_suffix (4.0.6)
     puma (4.3.12)
       nio4r (~> 2.0)
-    rack (2.2.3.1)
-    rack-protection (2.2.0)
+    rack (2.2.4)
+    rack-protection (2.2.3)
       rack
     rack-test (1.1.0)
       rack (>= 1.0, < 3)
@@ -106,10 +106,10 @@ GEM
     ruby-progressbar (1.11.0)
     ruby2_keywords (0.0.5)
     safe_yaml (1.0.5)
-    sinatra (2.2.0)
-      mustermann (~> 1.0)
+    sinatra (2.2.3)
+      mustermann (~> 2.0)
       rack (~> 2.2)
-      rack-protection (= 2.2.0)
+      rack-protection (= 2.2.3)
       tilt (~> 2.0)
     slack-ruby-bot (0.16.1)
       activesupport
@@ -123,7 +123,7 @@ GEM
       hashie
       websocket-driver
     thor (0.19.4)
-    tilt (2.0.10)
+    tilt (2.0.11)
     timers (4.3.3)
     tzinfo (2.0.5)
       concurrent-ruby (~> 1.0)
