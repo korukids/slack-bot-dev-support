@@ -49,6 +49,7 @@ GEM
       concurrent-ruby (~> 1.0)
     io-event (1.0.9)
     json (2.6.2)
+    logger (1.7.0)
     method_source (0.9.2)
     minitest (5.19.0)
     mock_redis (0.16.1)
@@ -116,13 +117,13 @@ GEM
       activesupport
       hashie
       slack-ruby-client (>= 0.14.0)
-    slack-ruby-client (1.1.0)
-      faraday (>= 2.0)
+    slack-ruby-client (2.7.0)
+      faraday (>= 2.0.1)
       faraday-mashify
       faraday-multipart
       gli
       hashie
-      websocket-driver
+      logger
     strscan (3.1.0)
     thor (0.19.4)
     tilt (2.0.11)
