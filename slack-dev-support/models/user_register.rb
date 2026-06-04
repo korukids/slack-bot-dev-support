@@ -61,7 +61,27 @@ class UserRegister
     Redis.current.hdel(user_meta_key(channel, user), 'work_days')
   end
 
+  def self.away_until(channel:, user:)
+    raw = user_meta(channel:, user:)['away_until']
+    return nil if raw.nil? || raw.empty?
+
+    Date.parse(raw)
+  rescue ArgumentError
+    nil
+  end
+
+  def self.set_away_until(channel:, user:, date:)
+    Redis.current.hset(user_meta_key(channel, user), 'away_until', date.to_s)
+  end
+
+  def self.clear_away(channel:, user:)
+    Redis.current.hdel(user_meta_key(channel, user), 'away_until')
+  end
+
   def self.eligible?(channel:, user:, date: Date.today)
+    away = away_until(channel:, user:)
+    return false if away && away >= date
+
     work_days(channel:, user:).include?(DAY_KEYS[date.wday])
   end
 

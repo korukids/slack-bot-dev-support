@@ -55,6 +55,17 @@ Accepts comma lists (`mon,tue,wed,thu`) or ranges (`mon-thu`). Valid day tokens:
 08:33 Developer Support: @Jake's work-days reset to default (mon-fri).
 ```
 
+### away [@user] until YYYY-MM-DD | clear
+Marks a developer as away through (and including) the given date — i.e. the date is the last day of absence; they're eligible again the day after. The scheduled daily assignment and `next` skip away users, and the flag auto-clears once the date has passed.
+
+```
+08:31 Jake The Human: @Developer Support away until 2026-06-01
+08:31 Developer Support: @Jake marked away until 2026-06-01.
+
+08:32 Jake The Human: @Developer Support away clear
+08:32 Developer Support: @Jake is no longer marked away.
+```
+
 ### help
 Lists all available commands.
 

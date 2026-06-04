@@ -23,6 +23,23 @@ describe UserRegister do
     end
   end
 
+  describe '.away_until' do
+    it 'is nil by default' do
+      expect(described_class.away_until(channel:, user:)).to be_nil
+    end
+
+    it 'round-trips a date' do
+      described_class.set_away_until(channel:, user:, date: Date.new(2026, 6, 1))
+      expect(described_class.away_until(channel:, user:)).to eq(Date.new(2026, 6, 1))
+    end
+
+    it 'clear removes it' do
+      described_class.set_away_until(channel:, user:, date: Date.new(2026, 6, 1))
+      described_class.clear_away(channel:, user:)
+      expect(described_class.away_until(channel:, user:)).to be_nil
+    end
+  end
+
   describe '.eligible?' do
     it 'returns true for a default user on a weekday' do
       expect(described_class.eligible?(channel:, user:, date: Date.new(2026, 5, 20))).to be(true) # Wed
@@ -31,6 +48,16 @@ describe UserRegister do
     it 'returns false on a non-work-day' do
       described_class.set_work_days(channel:, user:, days: %w[mon tue])
       expect(described_class.eligible?(channel:, user:, date: Date.new(2026, 5, 20))).to be(false) # Wed
+    end
+
+    it 'returns false when away through today' do
+      described_class.set_away_until(channel:, user:, date: Date.new(2026, 6, 1))
+      expect(described_class.eligible?(channel:, user:, date: Date.new(2026, 5, 20))).to be(false)
+    end
+
+    it 'returns true when the away date has passed' do
+      described_class.set_away_until(channel:, user:, date: Date.new(2026, 5, 19))
+      expect(described_class.eligible?(channel:, user:, date: Date.new(2026, 5, 20))).to be(true) # Wed
     end
   end
 
