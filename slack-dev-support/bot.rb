@@ -32,13 +32,6 @@ module SlackDevSupport
     # Daily rotation: tail becomes head (everyone shifts down one position).
     Redis.current.rpoplpush("#{redis_channel}_users", "#{redis_channel}_users")
 
-    # Bring yesterday's _not_applicable bucket back into the active queue.
-    yesterdays_not_applicable = Redis.current.lrange("#{redis_channel}_not_applicable", 0, 200)
-    yesterdays_not_applicable.each do |user|
-      Redis.current.rpush("#{redis_channel}_users", user)
-    end
-    Redis.current.del("#{redis_channel}_not_applicable")
-
     selected = Redis.current.lrange("#{redis_channel}_users", 0, 200).last
     $slack_client.chat_postMessage(channel: announce_channel,
                                    text: format(message_template, user: "<@#{selected}>"))

@@ -11,9 +11,8 @@ describe SlackDevSupport::Commands::List do
     Redis.current.lpush('channel_users', 'user_1')
     Redis.current.lpush('channel_users', 'user_2')
     Redis.current.lpush('channel_users', 'user_3')
-
-    Redis.current.lpush('channel_not_applicable', 'user_4')
-    Redis.current.lpush('channel_not_applicable', 'user_5')
+    Redis.current.lpush('channel_users', 'user_4')
+    Redis.current.lpush('channel_users', 'user_5')
   end
 
   it 'returns only a message' do

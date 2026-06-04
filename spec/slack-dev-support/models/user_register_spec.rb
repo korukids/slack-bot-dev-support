@@ -38,11 +38,11 @@ describe UserRegister do
   end
 
   describe '.list' do
-    it 'lists all users in the user and not_applicable lists for the channel' do
+    it 'lists all users in the channel rotation' do
       Redis.current.lpush('channel_users', 'user_1')
       Redis.current.lpush('channel_users', 'user_2')
-      Redis.current.lpush('channel_not_applicable', 'user_3')
-      Redis.current.lpush('channel_not_applicable', 'user_4')
+      Redis.current.lpush('channel_users', 'user_3')
+      Redis.current.lpush('channel_users', 'user_4')
 
       list = described_class.list(channel: 'channel')
 

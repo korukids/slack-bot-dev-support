@@ -11,15 +11,7 @@ module SlackDevSupport
       command 'next' do |client, data, _match|
         next_user = UserRegister.skip(channel: data.channel)
 
-        if next_user
-          client.say(channel: data.channel, text: "<@#{next_user}> is on dev-support")
-        else
-          last_dev_standing = UserRegister.list(channel: data.channel).last
-          client.say(
-            channel: data.channel,
-            text: "There are no more people on the list, <@#{last_dev_standing}> is the last developer standing."
-          )
-        end
+        client.say(channel: data.channel, text: "<@#{next_user}> is on dev-support") if next_user
       end
     end
   end
