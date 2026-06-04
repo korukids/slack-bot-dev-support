@@ -39,6 +39,22 @@ Removes you (if no @user provided) or a given developer permanently from the ros
 08:31 Developer Support: @BMO has been deregistered
 ```
 
+### workdays [@user] [days|reset]
+Configures which days a developer is eligible for dev-support. Defaults to Mon-Fri. Days outside the list are skipped automatically by the scheduled assignment and by `next`.
+
+Accepts comma lists (`mon,tue,wed,thu`) or ranges (`mon-thu`). Valid day tokens: `sun mon tue wed thu fri sat`.
+
+```
+08:31 Jake The Human: @Developer Support workdays mon-thu
+08:31 Developer Support: @Jake's work-days set to: mon, tue, wed, thu
+
+08:32 Jake The Human: @Developer Support workdays
+08:32 Developer Support: @Jake works: mon, tue, wed, thu
+
+08:33 Jake The Human: @Developer Support workdays reset
+08:33 Developer Support: @Jake's work-days reset to default (mon-fri).
+```
+
 ### help
 Lists all available commands.
 

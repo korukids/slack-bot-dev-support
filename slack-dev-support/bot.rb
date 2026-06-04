@@ -1,3 +1,5 @@
+require_relative 'models/user_register'
+
 module SlackDevSupport
   DEVELOPER_CHANNEL = 'GB66FUL2H'.freeze
   PRODUCT_DESIGN_CHANNEL = 'CG4VDUZ2L'.freeze
@@ -13,7 +15,7 @@ module SlackDevSupport
       end
 
       command 'list' do
-        desc 'This lists all the users in dev-support'
+        desc 'This lists all the users in dev-support, annotated with work-days'
       end
 
       command 'register' do
@@ -25,6 +27,11 @@ module SlackDevSupport
         desc 'Use this to deregister for dev-support'
         long_desc 'You can run this command with a target, for example "dev-support deregister @Frank"'
       end
+
+      command 'workdays' do
+        desc 'View or set which days a user is eligible for dev-support'
+        long_desc 'Examples: "workdays" (show yours), "workdays mon,tue,wed,thu", "workdays @Frank mon-thu", "workdays reset" (back to mon-fri)'
+      end
     end
   end
 
@@ -32,9 +39,15 @@ module SlackDevSupport
     # Daily rotation: tail becomes head (everyone shifts down one position).
     Redis.current.rpoplpush("#{redis_channel}_users", "#{redis_channel}_users")
 
-    selected = Redis.current.lrange("#{redis_channel}_users", 0, 200).last
-    $slack_client.chat_postMessage(channel: announce_channel,
-                                   text: format(message_template, user: "<@#{selected}>"))
+    # Skip past anyone not working today.
+    selected = UserRegister.advance_until_eligible(channel: redis_channel)
+
+    if selected
+      $slack_client.chat_postMessage(channel: announce_channel,
+                                     text: format(message_template, user: "<@#{selected}>"))
+    else
+      $slack_client.chat_postMessage(channel: announce_channel, text: 'No-one is available today.')
+    end
   end
 
   def self.assign
