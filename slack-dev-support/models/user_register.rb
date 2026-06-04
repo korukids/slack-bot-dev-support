@@ -100,4 +100,25 @@ class UserRegister
 
     nil
   end
+
+  # Assign a specific user. The current assignee (the old tail) is sent to the
+  # head — the back of the line — so they return on the next full cycle. Other
+  # users keep their place; only the displaced assignee loses their turn.
+  def self.assign_to_user(channel:, user:)
+    return { status: :not_registered } unless user_registered?(channel, user)
+
+    active = list_active(channel:)
+    return { status: :already_assigned } if active.last == user
+
+    previous = active.last
+
+    Redis.current.lrem("#{channel}_users", 0, user)
+    if previous
+      Redis.current.lrem("#{channel}_users", 0, previous)
+      Redis.current.lpush("#{channel}_users", previous)
+    end
+    Redis.current.rpush("#{channel}_users", user)
+
+    { status: :assigned, previous: }
+  end
 end

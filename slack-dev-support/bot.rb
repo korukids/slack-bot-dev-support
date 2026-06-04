@@ -33,6 +33,11 @@ module SlackDevSupport
         long_desc 'Examples: "workdays" (show yours), "workdays mon,tue,wed,thu", "workdays @Frank mon-thu", "workdays reset" (back to mon-fri)'
       end
 
+      command 'assign' do
+        desc 'Assign yourself or a teammate to dev-support for today'
+        long_desc 'Usage: `assign`, `assign me`, or `assign @user`. The current assignee is displaced to the back of the rotation; other users keep their place in the cycle.'
+      end
+
       command 'away' do
         desc 'Mark a user as away until a given date'
         long_desc 'Examples: "away until 2026-06-01", "away @Frank until 2026-06-01", "away clear". Away users are skipped by the scheduled assignment and `next`, and auto-return after the date.'

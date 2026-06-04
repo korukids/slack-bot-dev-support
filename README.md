@@ -66,6 +66,17 @@ Marks a developer as away through (and including) the given date — i.e. the da
 08:32 Developer Support: @Jake is no longer marked away.
 ```
 
+### assign [me | @user]
+Manually assigns yourself or someone else to dev-support for today. The current assignee is displaced to the back of the rotation. Other users keep their place in the cycle — only the displaced assignee loses their turn.
+
+```
+10:15 Jake The Human: @Developer Support assign
+10:15 Developer Support: @Jake is on dev-support
+
+10:16 Jake The Human: @Developer Support assign @Finn
+10:16 Developer Support: @Finn is on dev-support
+```
+
 ### help
 Lists all available commands.
 

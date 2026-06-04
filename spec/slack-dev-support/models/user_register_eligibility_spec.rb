@@ -89,6 +89,37 @@ describe UserRegister do
     end
   end
 
+  describe '.assign_to_user' do
+    before do
+      Redis.current.rpush("#{channel}_users", 'user_a')
+      Redis.current.rpush("#{channel}_users", 'user_b')
+      Redis.current.rpush("#{channel}_users", 'user_c') # current assignee
+    end
+
+    it 'moves the target to the tail and the previous assignee to the head' do
+      result = described_class.assign_to_user(channel:, user: 'user_a')
+      expect(result).to eq(status: :assigned, previous: 'user_c')
+      expect(described_class.list_active(channel:)).to eq(%w[user_c user_b user_a])
+    end
+
+    it 'is a no-op when target already on duty' do
+      result = described_class.assign_to_user(channel:, user: 'user_c')
+      expect(result).to eq(status: :already_assigned)
+    end
+
+    it 'rejects unregistered users' do
+      result = described_class.assign_to_user(channel:, user: 'ghost')
+      expect(result).to eq(status: :not_registered)
+    end
+
+    it 'only displaces the previous assignee, not users in between' do
+      Redis.current.del("#{channel}_users")
+      %w[user_a user_b user_c user_d user_e].each { |u| Redis.current.rpush("#{channel}_users", u) }
+      described_class.assign_to_user(channel:, user: 'user_b')
+      expect(described_class.list_active(channel:)).to eq(%w[user_e user_a user_c user_d user_b])
+    end
+  end
+
   describe '.remove' do
     it 'clears the user metadata hash too' do
       described_class.add(user:, channel:)
