@@ -1,9 +1,6 @@
 require_relative 'models/user_register'
 
 module SlackDevSupport
-  DEVELOPER_CHANNEL = 'GB66FUL2H'.freeze
-  PRODUCT_DESIGN_CHANNEL = 'CG4VDUZ2L'.freeze
-
   class Bot < SlackRubyBot::Bot
     help do
       title 'dev-support bot'
@@ -45,28 +42,19 @@ module SlackDevSupport
     end
   end
 
-  def self.assign_for(redis_channel:, announce_channel:, message_template:)
+  # Daily assignment. Rotates the roster (keyed off the channel), skips anyone
+  # not working today, and announces the pick.
+  def self.assign
     # Daily rotation: tail becomes head (everyone shifts down one position).
-    Redis.current.rpoplpush("#{redis_channel}_users", "#{redis_channel}_users")
+    Redis.current.rpoplpush("#{$channel}_users", "#{$channel}_users")
 
     # Skip past anyone not working today.
-    selected = UserRegister.advance_until_eligible(channel: redis_channel)
+    selected = UserRegister.advance_until_eligible(channel: $channel)
 
     if selected
-      $slack_client.chat_postMessage(channel: announce_channel,
-                                     text: format(message_template, user: "<@#{selected}>"))
+      $slack_client.chat_postMessage(channel: $channel, text: "<@#{selected}> is on dev support today!")
     else
-      $slack_client.chat_postMessage(channel: announce_channel, text: 'No-one is available today.')
+      $slack_client.chat_postMessage(channel: $channel, text: 'No-one is available today.')
     end
-  end
-
-  def self.assign
-    assign_for(redis_channel: DEVELOPER_CHANNEL, announce_channel: $channel,
-               message_template: '%<user>s is on dev support today!')
-  end
-
-  def self.assign_prod_design
-    assign_for(redis_channel: PRODUCT_DESIGN_CHANNEL, announce_channel: $prod_design_channel,
-               message_template: '%<user>s is your chair today!')
   end
 end

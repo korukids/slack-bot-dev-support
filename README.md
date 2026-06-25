@@ -1,6 +1,6 @@
 # Slack Bot Dev Support
 
-This bot manages the developer support schedule.
+This bot manages the developer support schedule. It runs in a single channel — the dev-support channel where colleagues raise requests — posting the daily on-support assignment there alongside the team's own messages.
 
 ## Commands
 The bot responds to the following commands when @ mentioned in slack (e.g. `@Developer Support help`)
@@ -79,6 +79,39 @@ Manually assigns yourself or someone else to dev-support for today. The current 
 
 ### help
 Lists all available commands.
+
+## Configuration
+
+The bot reads its configuration from environment variables (see `.env-sample`):
+
+| Variable | Purpose |
+| --- | --- |
+| `SLACK_API_TOKEN` | Slack API token for the bot. |
+| `CHANNEL_ID` | The dev-support channel the bot posts to. **The bot must be invited to this channel.** |
+| `REDIS_URL` | Redis connection (defaults to `redis://localhost:6379/`). |
+
+## Scheduling
+
+Time-based behaviour runs as Rake tasks triggered by an external scheduler (e.g. cron, Heroku Scheduler), on weekdays. Run a task with `bundle exec rake <task>`.
+
+| Task | When | Purpose |
+| --- | --- | --- |
+| `assign` | 09:00 | Pick today's on-support developer and announce it. |
+
+## Migrating the roster
+
+The rotation roster is a Redis list keyed by channel: `"<channel-id>_users"`. If you change `CHANNEL_ID` (for example when first moving the bot into the dev-support channel), the roster keyed off the old channel is left behind.
+
+You can either **re-register** everyone in the new channel (`@Developer Support register`), or **carry the existing roster over** by copying the Redis list — run this before or after deploy:
+
+```
+# Replace OLD_CHANNEL_ID / NEW_CHANNEL_ID with the real channel ids.
+redis-cli COPY OLD_CHANNEL_ID_users NEW_CHANNEL_ID_users        # Redis >= 6.2
+# Or, on older Redis without COPY (consumes the old key):
+redis-cli RENAME OLD_CHANNEL_ID_users NEW_CHANNEL_ID_users
+```
+
+Per-user settings (work-days, away dates) live under `"<channel-id>_user:<user-id>"`. They're light enough to re-enter, or copy them across the same way (`redis-cli --scan --pattern 'OLD_CHANNEL_ID_user:*'`).
 
 ## How to develop
 
