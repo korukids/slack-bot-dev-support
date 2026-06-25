@@ -96,7 +96,7 @@ Time-based behaviour runs as Rake tasks triggered by an external scheduler (e.g.
 
 | Task | When | Purpose |
 | --- | --- | --- |
-| `assign` | 09:00 | Pick today's on-support developer and announce it. |
+| `assign` | 09:00 | Pick today's on-support developer and post the daily message (names the dev and sets expectations for the team). |
 
 ## Migrating the roster
 

@@ -43,7 +43,8 @@ module SlackDevSupport
   end
 
   # Daily assignment. Rotates the roster (keyed off the channel), skips anyone
-  # not working today, and announces the pick.
+  # not working today, and posts a single message that both names today's
+  # on-support dev and sets expectations for the team.
   def self.assign
     # Daily rotation: tail becomes head (everyone shifts down one position).
     Redis.current.rpoplpush("#{$channel}_users", "#{$channel}_users")
@@ -51,10 +52,20 @@ module SlackDevSupport
     # Skip past anyone not working today.
     selected = UserRegister.advance_until_eligible(channel: $channel)
 
-    if selected
-      $slack_client.chat_postMessage(channel: $channel, text: "<@#{selected}> is on dev support today!")
-    else
-      $slack_client.chat_postMessage(channel: $channel, text: 'No-one is available today.')
+    $slack_client.chat_postMessage(channel: $channel, text: assignment_message(selected))
+  end
+
+  # The morning post. Names today's dev and sets expectations: we review
+  # through the day, and urgent things should be pinged directly.
+  def self.assignment_message(user)
+    unless user
+      return 'No-one is on dev support today. Please post requests here and ' \
+             'ping the team directly if something is urgent.'
     end
+
+    mention = "<@#{user}>"
+    ":wave: #{mention} is on dev support today. We'll review requests through the day and " \
+      "get back to you — if something needs urgent attention, ping #{mention} directly. " \
+      'Just post your request here and we\'ll pick it up.'
   end
 end
