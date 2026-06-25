@@ -5,6 +5,8 @@ Dir["#{File.expand_path('config/initializers', __dir__)}/**/*.rb"].each do |file
   require file
 end
 
+require './slack-dev-support/models/support_request'
+require './slack-dev-support/listeners/support_listener'
 require './slack-dev-support/bot'
 require './slack-dev-support/commands/register'
 require './slack-dev-support/commands/deregister'

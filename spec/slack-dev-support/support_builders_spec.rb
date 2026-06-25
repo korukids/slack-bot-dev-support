@@ -1,0 +1,82 @@
+require 'spec_helper'
+require 'date'
+
+describe 'SlackDevSupport support reminder builders' do
+  let(:posted) { [] }
+
+  around do |example|
+    original = $slack_client
+    fake = Object.new
+    captured = posted
+    fake.define_singleton_method(:chat_postMessage) { |args| captured << args }
+    $slack_client = fake
+    example.run
+    $slack_client = original
+  end
+
+  before do
+    # Seed an on-support dev as the rotation tail.
+    UserRegister.add(user: 'U_DEV', channel: $channel)
+  end
+
+  def yesterday_ts
+    (Time.now.to_i - (24 * 60 * 60)).to_s
+  end
+
+  def today_ts
+    Time.now.to_i.to_s
+  end
+
+  describe '.assign carryover' do
+    it 'posts only the assignment message when nothing is carrying over' do
+      SlackDevSupport.assign
+      expect(posted.length).to eq(1)
+      expect(posted.first[:text]).to include('on dev support today')
+      expect(posted.first[:text]).not_to include('Still open from previous days')
+    end
+
+    it 'does not treat today\'s requests as carryover' do
+      SupportRequest.create_request(ts: today_ts, user: 'U_OP', text: 'today', channel: $channel)
+      SlackDevSupport.assign
+      expect(posted.first[:text]).not_to include('Still open from previous days')
+    end
+
+    it 'appends prior-day open requests to the assignment message' do
+      SupportRequest.create_request(ts: yesterday_ts, user: 'U_OP', text: 'old', channel: $channel)
+      SlackDevSupport.assign
+      expect(posted.length).to eq(1)
+      expect(posted.first[:text]).to include('on dev support today')
+      expect(posted.first[:text]).to include('Still open from previous days')
+    end
+  end
+
+  describe '.post_nudge' do
+    it 'stays silent when nothing is open' do
+      SlackDevSupport.post_nudge
+      expect(posted).to be_empty
+    end
+
+    it 'posts a nudge listing open requests' do
+      SupportRequest.create_request(ts: today_ts, user: 'U_OP', text: 'now', channel: $channel)
+      SlackDevSupport.post_nudge
+      expect(posted.length).to eq(1)
+      expect(posted.first[:text]).to include('still open')
+    end
+  end
+
+  describe '.post_end_of_day_summary' do
+    it 'always posts, with an all-clear note when empty' do
+      SlackDevSupport.post_end_of_day_summary
+      expect(posted.length).to eq(1)
+      expect(posted.first[:text]).to include('All clear')
+    end
+
+    it 'reports counts and timings when there is activity' do
+      SupportRequest.create_request(ts: today_ts, user: 'U_OP', text: 'now', channel: $channel)
+      SlackDevSupport.post_end_of_day_summary
+      expect(posted.length).to eq(1)
+      expect(posted.first[:text]).to include('Requests: 1')
+      expect(posted.first[:text]).to include('Still open')
+    end
+  end
+end
