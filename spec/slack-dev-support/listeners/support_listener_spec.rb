@@ -14,8 +14,8 @@ describe SlackDevSupport::SupportListener do
     allow(described_class).to receive(:bot_user_id).and_return('U_BOT')
   end
 
-  def post_top_level(channel: support, user: op, ts: req_ts, subtype: nil, bot_id: nil)
-    described_class.handle_message(channel:, user:, text: 'help', ts:,
+  def post_top_level(channel: support, user: op, ts: req_ts, subtype: nil, bot_id: nil, text: 'help')
+    described_class.handle_message(channel:, user:, text:, ts:,
                                    thread_ts: nil, subtype:, bot_id:)
   end
 
@@ -35,6 +35,21 @@ describe SlackDevSupport::SupportListener do
       post_top_level(subtype: 'channel_join')
       post_top_level(user: 'U_BOT')
       expect(SupportRequest.get(ts: req_ts)).to be_nil
+    end
+
+    it 'does not track a message that @mentions the bot (it is a command)' do
+      post_top_level(text: '<@U_BOT> register')
+      expect(SupportRequest.get(ts: req_ts)).to be_nil
+    end
+
+    it 'does not track a message that @mentions the bot with a label' do
+      post_top_level(text: '<@U_BOT|devsupport> list')
+      expect(SupportRequest.get(ts: req_ts)).to be_nil
+    end
+
+    it 'still tracks a message that mentions a different user' do
+      post_top_level(text: 'hey <@U_SOMEONE> can you look at this')
+      expect(SupportRequest.get(ts: req_ts)).not_to be_nil
     end
   end
 
