@@ -9,7 +9,11 @@ module SlackDevSupport
       module_function
 
       def call(channel:, user:, expression:)
-        target = expression.to_s.strip.empty? ? user : TargetParsing.extract_user(expression)
+        return UserRegister.remove(user:, channel:) if expression.to_s.strip.empty?
+
+        target = TargetParsing.extract_user(expression, user)
+        return TargetParsing.invalid_user_message(expression) if target.nil?
+
         UserRegister.remove(user: target, channel:)
       end
     end

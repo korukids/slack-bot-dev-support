@@ -42,19 +42,32 @@ describe SlackDevSupport::Commands::TargetParsing do
 
   describe '.extract_user' do
     it 'extracts the id from a bare mention' do
-      expect(described_class.extract_user('<@U123>')).to eq('U123')
+      expect(described_class.extract_user('<@U123>', 'caller')).to eq('U123')
     end
 
     it 'extracts the id from a labelled mention, dropping the label' do
-      expect(described_class.extract_user('<@U123|frank>')).to eq('U123')
+      expect(described_class.extract_user('<@U123|frank>', 'caller')).to eq('U123')
     end
 
-    it 'returns an already-bare id unchanged' do
-      expect(described_class.extract_user('U123')).to eq('U123')
+    it 'strips surrounding whitespace around a mention' do
+      expect(described_class.extract_user('  <@U123|frank>  ', 'caller')).to eq('U123')
     end
 
-    it 'strips surrounding whitespace' do
-      expect(described_class.extract_user('  <@U123|frank>  ')).to eq('U123')
+    it 'resolves the "me" keyword to the caller (case-insensitive)' do
+      expect(described_class.extract_user('me', 'caller')).to eq('caller')
+      expect(described_class.extract_user('Me', 'caller')).to eq('caller')
+    end
+
+    it 'returns nil for a bare word that is not a mention' do
+      expect(described_class.extract_user('frank', 'caller')).to be_nil
+    end
+
+    it 'returns nil for a mention with trailing junk (a whole-ref parser)' do
+      expect(described_class.extract_user('<@U123> and others', 'caller')).to be_nil
+    end
+
+    it 'returns nil for empty input' do
+      expect(described_class.extract_user('', 'caller')).to be_nil
     end
   end
 end

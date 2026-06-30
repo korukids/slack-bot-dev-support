@@ -44,5 +44,20 @@ describe SlackDevSupport::Commands::Register do
           .to eq('Thanks for registering <@user_2>!')
       end
     end
+
+    context 'with the "me" keyword' do
+      it 'registers the caller' do
+        expect(described_class.call(channel: 'channel', user: 'user', expression: 'me'))
+          .to eq('Thanks for registering <@user>!')
+      end
+    end
+
+    context 'with an unresolvable reference' do
+      it 'rejects a bare word and stores nothing' do
+        result = described_class.call(channel: 'channel', user: 'user', expression: 'frank')
+        expect(result).to match(/Couldn't resolve `frank`/)
+        expect(UserRegister.list(channel: 'channel')).to be_empty
+      end
+    end
   end
 end

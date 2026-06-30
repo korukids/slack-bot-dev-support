@@ -11,7 +11,9 @@ module SlackDevSupport
 
       def call(channel:, user:, expression:)
         expr = expression.to_s.strip
-        target = expr.casecmp('me').zero? ? user : TargetParsing.extract_target(expr, user).first
+        target = expr.empty? ? user : TargetParsing.extract_user(expr, user)
+        return TargetParsing.invalid_user_message(expr) if target.nil?
+
         result = UserRegister.assign_to_user(channel:, user: target)
 
         case result[:status]
