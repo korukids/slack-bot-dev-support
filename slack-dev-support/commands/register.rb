@@ -1,13 +1,16 @@
 require_relative '../models/user_register'
+require_relative 'target_parsing'
 
 module SlackDevSupport
   module Commands
-    class Register < SlackRubyBot::Commands::Base
-      command 'register' do |client, data, match|
-        target = match['expression'].present? ? match['expression'].delete('<>@') : data.user
+    # Adds a developer to the roster. With no expression the caller registers
+    # themselves; an @mention registers that user instead.
+    module Register
+      module_function
 
-        message = UserRegister.add(user: target, channel: data.channel)
-        client.say(channel: data.channel, text: message)
+      def call(channel:, user:, expression:)
+        target = expression.to_s.strip.empty? ? user : TargetParsing.extract_user(expression)
+        UserRegister.add(user: target, channel:)
       end
     end
   end

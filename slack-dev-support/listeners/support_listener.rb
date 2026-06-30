@@ -61,7 +61,7 @@ module SlackDevSupport
     end
 
     def bot_user_id
-      SlackRubyBot.config.user_id
+      $bot_user_id
     end
 
     def now_epoch

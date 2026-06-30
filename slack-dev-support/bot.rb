@@ -3,88 +3,12 @@ require_relative 'models/user_register'
 require_relative 'models/support_request'
 require_relative 'listeners/support_listener'
 
+# Scheduled-post behaviour, invoked by the Rake tasks (assign / support_nudge /
+# support_summary) as SlackDevSupport.assign etc. Event handling and command
+# dispatch now live in SocketMode + Dispatcher; this module only owns the
+# messages the external scheduler triggers. Everything here posts via the Web
+# API ($slack_client).
 module SlackDevSupport
-  class Bot < SlackRubyBot::Bot
-    help do
-      title 'dev-support bot'
-      desc 'This bot assigns a dev to the dev-support channel every morning'
-
-      command 'next' do
-        desc 'This tells the bot to assign dev-support to the next person on the list'
-        long_desc 'You can run this command at any time during the day, and it will move the current dev-support user to tomorrow and pick the next person in the rotation for today. You can run this until there are no more users to take over for today.'
-      end
-
-      command 'list' do
-        desc 'This lists all the users in dev-support, annotated with work-days and away status'
-      end
-
-      command 'register' do
-        desc 'Use this to register for dev-support'
-        long_desc 'You can run this command with a target, for example "dev-support register @Frank"'
-      end
-
-      command 'deregister' do
-        desc 'Use this to deregister for dev-support'
-        long_desc 'You can run this command with a target, for example "dev-support deregister @Frank"'
-      end
-
-      command 'workdays' do
-        desc 'View or set which days a user is eligible for dev-support'
-        long_desc 'Examples: "workdays" (show yours), "workdays mon,tue,wed,thu", "workdays @Frank mon-thu", "workdays reset" (back to mon-fri)'
-      end
-
-      command 'assign' do
-        desc 'Assign yourself or a teammate to dev-support for today'
-        long_desc 'Usage: `assign`, `assign me`, or `assign @user`. The current assignee is displaced to the back of the rotation; other users keep their place in the cycle.'
-      end
-
-      command 'away' do
-        desc 'Mark a user as away until a given date'
-        long_desc 'Examples: "away until 2026-06-01", "away @Frank until 2026-06-01", "away clear". Away users are skipped by the scheduled assignment and `next`, and auto-return after the date.'
-      end
-    end
-  end
-
-  # Passive listeners on the support channel. Hooks live on the running server
-  # (SlackRubyBot::App), not on the command class. They run on the RTM thread,
-  # where config.ru sets abort_on_exception — so every handler is rescued to
-  # keep a single malformed event from tearing down the connection.
-  SlackRubyBot::App.on :message do |_client, data|
-    SupportListener.handle_message(
-      channel: data.channel,
-      user: data.user,
-      text: data.text,
-      ts: data.ts,
-      thread_ts: data.thread_ts,
-      subtype: data.subtype,
-      bot_id: data['bot_id']
-    )
-  rescue StandardError => e
-    warn "support message handler error: #{e}"
-  end
-
-  SlackRubyBot::App.on :reaction_added do |_client, data|
-    SupportListener.handle_reaction(
-      action: :added,
-      name: data.reaction,
-      item_ts: data.item.ts,
-      item_channel: data.item.channel
-    )
-  rescue StandardError => e
-    warn "support reaction_added handler error: #{e}"
-  end
-
-  SlackRubyBot::App.on :reaction_removed do |_client, data|
-    SupportListener.handle_reaction(
-      action: :removed,
-      name: data.reaction,
-      item_ts: data.item.ts,
-      item_channel: data.item.channel
-    )
-  rescue StandardError => e
-    warn "support reaction_removed handler error: #{e}"
-  end
-
   # Daily assignment. Rotates the roster (keyed off the channel), skips anyone
   # not working today, and posts a single message that both names today's
   # on-support dev and sets expectations for the team.

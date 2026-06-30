@@ -1,1 +1,4 @@
 .env
+dump.rdb
+node_modules/
+yarn.lock

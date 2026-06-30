@@ -1,27 +1,10 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (7.0.7.2)
-      concurrent-ruby (~> 1.0, >= 1.0.2)
-      i18n (>= 1.6, < 2)
-      minitest (>= 5.1)
-      tzinfo (~> 2.0)
     addressable (2.8.0)
       public_suffix (>= 2.0.2, < 5.0)
     ast (2.4.2)
-    async (2.0.3)
-      console (~> 1.10)
-      io-event (~> 1.0.0)
-      timers (~> 4.1)
-    async-io (1.33.0)
-      async
-    async-websocket (0.8.0)
-      async-io
-      websocket-driver (~> 0.7.0)
     coderay (1.1.2)
-    concurrent-ruby (1.2.2)
-    console (1.15.3)
-      fiber-local
     crack (0.4.3)
       safe_yaml (~> 1.0.0)
     diff-lcs (1.3)
@@ -39,19 +22,14 @@ GEM
     faye-websocket (0.11.1)
       eventmachine (>= 0.12.0)
       websocket-driver (>= 0.5.1)
-    fiber-local (1.0.0)
     foreman (0.82.0)
       thor (~> 0.19.1)
     gli (2.21.0)
     hashdiff (0.3.8)
     hashie (5.0.0)
-    i18n (1.14.1)
-      concurrent-ruby (~> 1.0)
-    io-event (1.0.9)
     json (2.6.2)
     logger (1.7.0)
     method_source (0.9.2)
-    minitest (5.19.0)
     mock_redis (0.16.1)
     multipart-post (2.2.3)
     mustermann (2.0.2)
@@ -113,10 +91,6 @@ GEM
       rack (~> 2.2)
       rack-protection (= 2.2.3)
       tilt (~> 2.0)
-    slack-ruby-bot (0.16.1)
-      activesupport
-      hashie
-      slack-ruby-client (>= 0.14.0)
     slack-ruby-client (2.7.0)
       faraday (>= 2.0.1)
       faraday-mashify
@@ -127,9 +101,6 @@ GEM
     strscan (3.1.0)
     thor (0.19.4)
     tilt (2.0.11)
-    timers (4.3.3)
-    tzinfo (2.0.6)
-      concurrent-ruby (~> 1.0)
     unicode-display_width (2.2.0)
     vcr (4.0.0)
     webmock (3.5.1)
@@ -144,8 +115,8 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  async-websocket (~> 0.8.0)
   dotenv
+  eventmachine
   faye-websocket
   foreman
   mock_redis
@@ -158,7 +129,7 @@ DEPENDENCIES
   rubocop
   rubocop-rspec
   sinatra
-  slack-ruby-bot
+  slack-ruby-client
   vcr
   webmock
 

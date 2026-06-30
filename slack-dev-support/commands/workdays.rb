@@ -3,52 +3,40 @@ require_relative 'target_parsing'
 
 module SlackDevSupport
   module Commands
-    class Workdays < SlackRubyBot::Commands::Base
+    # Views or sets which days a developer is eligible for dev-support. Accepts
+    # comma lists (`mon,tue,wed`), ranges (`mon-thu`), or `reset`.
+    module Workdays
       VALID_DAYS = UserRegister::DAY_KEYS
 
-      help do
-        command 'workdays' do
-          desc "View or set a user's eligible days for dev-support"
-          long_desc <<~LONG
-            Examples:
-              workdays                       — show your own work-days
-              workdays mon,tue,wed,thu       — set yours to Mon-Thu
-              workdays mon-thu               — same, range form
-              workdays @Frank mon,wed,fri    — set someone else's
-              workdays reset                 — back to mon-fri (default)
-              workdays @Frank reset
-          LONG
+      module_function
+
+      def call(channel:, user:, expression:)
+        target, rest = TargetParsing.extract_target(expression.to_s.strip, user)
+
+        if rest.empty?
+          current = UserRegister.work_days(channel:, user: target)
+          "<@#{target}> works: #{current.join(', ')}"
+        elsif rest.downcase == 'reset'
+          UserRegister.reset_work_days(channel:, user: target)
+          "<@#{target}>'s work-days reset to default (mon-fri)."
+        else
+          set_days(channel:, target:, rest:)
         end
       end
 
-      command 'workdays' do |client, data, match|
-        expression = match['expression'].to_s.strip
-
-        target, rest = TargetParsing.extract_target(expression, data.user)
-
-        text =
-          if rest.empty?
-            current = UserRegister.work_days(channel: data.channel, user: target)
-            "<@#{target}> works: #{current.join(', ')}"
-          elsif rest.downcase == 'reset'
-            UserRegister.reset_work_days(channel: data.channel, user: target)
-            "<@#{target}>'s work-days reset to default (mon-fri)."
-          else
-            days = Workdays.parse_days(rest)
-            if days.nil?
-              "Couldn't parse `#{rest}`. Try a comma list (`mon,tue,wed`) or a range (`mon-thu`)."
-            elsif days.empty?
-              "You must specify at least one work-day. Use `deregister` to remove yourself entirely."
-            else
-              UserRegister.set_work_days(channel: data.channel, user: target, days:)
-              "<@#{target}>'s work-days set to: #{days.join(', ')}"
-            end
-          end
-
-        client.say(channel: data.channel, text:)
+      def set_days(channel:, target:, rest:)
+        days = parse_days(rest)
+        if days.nil?
+          "Couldn't parse `#{rest}`. Try a comma list (`mon,tue,wed`) or a range (`mon-thu`)."
+        elsif days.empty?
+          'You must specify at least one work-day. Use `deregister` to remove yourself entirely.'
+        else
+          UserRegister.set_work_days(channel:, user: target, days:)
+          "<@#{target}>'s work-days set to: #{days.join(', ')}"
+        end
       end
 
-      def self.parse_days(input)
+      def parse_days(input)
         tokens = input.downcase.split(/[\s,]+/).reject(&:empty?)
         days = []
         tokens.each do |tok|
@@ -60,7 +48,7 @@ module SlackDevSupport
         days.uniq
       end
 
-      def self.expand_range(token)
+      def expand_range(token)
         if token.include?('-')
           from, to = token.split('-', 2)
           start_idx = VALID_DAYS.index(from)

@@ -116,9 +116,19 @@ The bot reads its configuration from environment variables (see `.env-sample`):
 
 | Variable | Purpose |
 | --- | --- |
-| `SLACK_API_TOKEN` | Slack API token for the bot. |
-| `CHANNEL_ID` | The dev-support channel the bot posts to. **The bot must be invited to this channel.** |
+| `SLACK_API_TOKEN` | Bot token (`xoxb-…`). Used for posting messages and reading the bot's own identity. |
+| `SLACK_APP_TOKEN` | App-level token (`xapp-…`, scope `connections:write`). Used to open the Socket Mode connection. |
+| `CHANNEL_ID` | The dev-support channel **id** (e.g. `C0123ABC`, not the channel name) the bot posts to. **The bot must be invited to this channel.** |
 | `REDIS_URL` | Redis connection (defaults to `redis://localhost:6379/`). |
+
+### Slack app setup
+
+The bot connects over [Socket Mode](https://docs.slack.dev/apps/connecting-to-slack/socket-mode/) (the RTM API it originally used is no longer available to modern apps). Create a Slack app from scratch and configure:
+
+- **Socket Mode** — enable it. Under *Basic Information → App-Level Tokens*, generate a token with the `connections:write` scope → this is `SLACK_APP_TOKEN`.
+- **Bot token scopes** (*OAuth & Permissions*): `chat:write`, `channels:history`, `reactions:read`, `app_mentions:read`. Add `groups:history` if the dev-support channel is private. Install to the workspace → the *Bot User OAuth Token* is `SLACK_API_TOKEN`.
+- **Event subscriptions** (*Event Subscriptions → Subscribe to bot events*): `message.channels`, `reaction_added`, `reaction_removed`, `app_mention`. (No request URL is needed — Socket Mode delivers these over the WebSocket.)
+- **Invite the bot to the dev-support channel.** It only receives events for channels it's a member of.
 
 ## Scheduling
 
@@ -146,6 +156,15 @@ redis-cli RENAME OLD_CHANNEL_ID_users NEW_CHANNEL_ID_users
 Per-user settings (work-days, away dates) live under `"<channel-id>_user:<user-id>"`. They're light enough to re-enter, or copy them across the same way (`redis-cli --scan --pattern 'OLD_CHANNEL_ID_user:*'`).
 
 ## How to develop
+
+### Run locally
+
+1. `bundle install` (Ruby 3.1.2 — see `.ruby-version`).
+2. Start Redis: `redis-server` (or `brew services start redis`).
+3. Copy `.env-sample` to `.env` and fill in `SLACK_API_TOKEN`, `SLACK_APP_TOKEN`, and `CHANNEL_ID` (see [Slack app setup](#slack-app-setup)).
+4. `bundle exec rackup` — boots the Socket Mode bot on a background thread alongside the Sinatra web process.
+
+Because every command and scheduled task posts into the live `CHANNEL_ID`, point a **separate test app + channel** at your local run rather than reusing the production bot — reusing the production token runs a second copy of the bot that double-processes events and corrupts the rotation. To exercise the scheduled posts on demand, run the Rake tasks directly: `bundle exec rake assign` / `support_nudge` / `support_summary`.
 
 ### Test
 run `rspec` to run tests in the project

@@ -8,8 +8,10 @@ require 'web'
 
 Thread.abort_on_exception = true
 
+# The Socket Mode runtime runs its own EventMachine reactor, so it lives on a
+# background thread while Sinatra serves the (trivial) web process in front.
 Thread.new do
-  SlackDevSupport::Bot.run
+  SlackDevSupport::SocketMode.run
 rescue Exception => e
   warn "ERROR: #{e}"
   warn e.backtrace
