@@ -20,7 +20,7 @@ module SlackDevSupport
     selected = UserRegister.advance_until_eligible(channel: $channel)
 
     text = [assignment_message(selected), carryover_note].compact.join("\n\n")
-    $slack_client.chat_postMessage(channel: $channel, text:)
+    post(text)
   end
 
   # Appended to the daily message when requests are still open from previous
@@ -65,7 +65,7 @@ module SlackDevSupport
     summary += ", #{awaiting.length} awaiting a first response" unless awaiting.empty?
     lines = open.map { |r| format_request_line(r) }
     text = "#{summary} (#{current_support_dev_mention} is on support today):\n#{lines.join("\n")}"
-    $slack_client.chat_postMessage(channel: $channel, text:)
+    post(text)
   end
 
   # End-of-day wrap-up, framed as a light service update. Always posts, even on
@@ -75,8 +75,7 @@ module SlackDevSupport
     open = SupportRequest.open_requests
 
     if metrics[:count].zero? && open.empty?
-      text = 'All clear today — no dev-support requests came in. :tada:'
-      return $slack_client.chat_postMessage(channel: $channel, text:)
+      return post('All clear today — no dev-support requests came in. :tada:')
     end
 
     lines = ['Dev-support wrap-up for today:',
@@ -91,16 +90,42 @@ module SlackDevSupport
       open.each { |r| lines << format_request_line(r) }
     end
 
-    $slack_client.chat_postMessage(channel: $channel, text: lines.join("\n"))
+    post(lines.join("\n"))
+  end
+
+  # Post to the support channel. unfurl_* are disabled so the Slack archive
+  # links in request lines don't each render a bulky message-preview card.
+  def self.post(text)
+    $slack_client.chat_postMessage(channel: $channel, text:, unfurl_links: false, unfurl_media: false)
   end
 
   def self.created_today?(request)
     SupportRequest.epoch_to_date(request['created_at']) == Date.today
   end
 
+  SNIPPET_LENGTH = 60
+
   def self.format_request_line(request)
     age = format_duration(Time.now.to_i - request['created_at'].to_f)
     "• #{message_link(request)} from <@#{request['user']}> — #{request_state(request)}, opened #{age} ago"
+  end
+
+  # A short, clickable label for the request's message: the truncated request
+  # text linking to the Slack archive permalink. Slack renders <url|label> as a
+  # hyperlink, so the raw URL never shows. Falls back to a generic label when
+  # the request has no stored text.
+  def self.message_link(request)
+    "<#{archive_url(request)}|#{request_snippet(request)}>"
+  end
+
+  def self.request_snippet(request)
+    text = request['text'].to_s.strip.tr("\n", ' ')
+    return 'view request' if text.empty?
+
+    snippet = text[0, SNIPPET_LENGTH]
+    snippet += '…' if text.length > SNIPPET_LENGTH
+    # Escape the few chars Slack treats specially inside link labels.
+    "“#{snippet.gsub('&', '&amp;').gsub('<', '&lt;').gsub('>', '&gt;')}”"
   end
 
   def self.request_state(request)
@@ -111,7 +136,7 @@ module SlackDevSupport
     'new'
   end
 
-  def self.message_link(request)
+  def self.archive_url(request)
     ts = request['created_at'].to_s
     "https://slack.com/archives/#{request['channel']}/p#{ts.delete('.')}"
   end

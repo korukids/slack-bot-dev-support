@@ -79,4 +79,26 @@ describe 'SlackDevSupport support reminder builders' do
       expect(posted.first[:text]).to include('Still open')
     end
   end
+
+  describe 'request line rendering' do
+    it 'links the request via a snippet label, not a bare URL, and suppresses unfurling' do
+      text = 'Prod deploy is failing on the migration step and blocking the release tonight'
+      SupportRequest.create_request(ts: today_ts, user: 'U_OP', text:, channel: $channel)
+      SlackDevSupport.post_nudge
+
+      body = posted.first[:text]
+      # Slack hyperlink form <url|label> with a truncated, quoted snippet.
+      expect(body).to match(%r{<https://slack\.com/archives/\S+\|“Prod deploy is failing[^”]*…”>})
+      # The raw URL is never shown outside the link target.
+      expect(body).not_to match(/\shttps:\/\/slack\.com\/archives/)
+      expect(posted.first[:unfurl_links]).to be(false)
+      expect(posted.first[:unfurl_media]).to be(false)
+    end
+
+    it 'falls back to a generic label when the request has no text' do
+      SupportRequest.create_request(ts: today_ts, user: 'U_OP', text: '', channel: $channel)
+      SlackDevSupport.post_nudge
+      expect(posted.first[:text]).to include('|view request>')
+    end
+  end
 end
