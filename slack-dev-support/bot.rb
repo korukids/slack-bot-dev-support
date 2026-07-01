@@ -33,8 +33,8 @@ module SlackDevSupport
     "Still open from previous days:\n#{lines.join("\n")}"
   end
 
-  # The morning post. Names today's dev and sets expectations: we review
-  # through the day, and urgent things should be pinged directly.
+  # The morning post. Order: who's on support, how to raise a request, when
+  # we'll look, and how to escalate.
   def self.assignment_message(user)
     unless user
       return 'No-one is on dev support today. Please post requests here and ' \
@@ -42,9 +42,9 @@ module SlackDevSupport
     end
 
     mention = "<@#{user}>"
-    ":wave: #{mention} is on dev support today. We'll review requests through the day and " \
-      "get back to you — if something needs urgent attention, ping #{mention} directly. " \
-      'Just post your request here and we\'ll pick it up.'
+    ":wave: #{mention} is on dev support today. " \
+      "Post your requests here and we'll check in through the day. " \
+      "If something is urgent, ping #{mention} directly. "
   end
 
   # Today's on-support dev — the tail of the rotation (same convention the daily
@@ -54,18 +54,16 @@ module SlackDevSupport
     user ? "<@#{user}>" : 'whoever is on dev support'
   end
 
-  # Mid-day status note: requests still open or awaiting a first response.
-  # Silent when everything is clear.
+  # Mid-day (~2pm) reminder for the on-support dev: how many are open vs closed
+  # today, then a line per still-open request. Silent when nothing is open.
   def self.post_nudge
     open = SupportRequest.open_requests
     return if open.empty?
 
-    awaiting = open.reject { |r| r['acknowledged_at'] }
-    summary = "Quick dev-support update — #{open.length} request(s) still open"
-    summary += ", #{awaiting.length} awaiting a first response" unless awaiting.empty?
+    closed = SupportRequest.metrics_for_day(date: Date.today)[:closed]
+    summary = "Mid-day nudge (#{current_support_dev_mention}): #{open.length} open, #{closed} closed"
     lines = open.map { |r| format_request_line(r) }
-    text = "#{summary} (#{current_support_dev_mention} is on support today):\n#{lines.join("\n")}"
-    post(text)
+    post("#{summary}\n#{lines.join("\n")}")
   end
 
   # End-of-day wrap-up, framed as a light service update. Always posts, even on
@@ -74,23 +72,23 @@ module SlackDevSupport
     metrics = SupportRequest.metrics_for_day(date: Date.today)
     open = SupportRequest.open_requests
 
-    if metrics[:count].zero? && open.empty?
-      return post('All clear today — no dev-support requests came in. :tada:')
-    end
+    return post('All clear today — no dev-support requests came in. :tada:') if metrics[:count].zero? && open.empty?
 
-    lines = ['Dev-support wrap-up for today:',
-             "• Requests: #{metrics[:count]}",
-             "• Resolved: #{metrics[:closed]}",
-             "• Carrying into tomorrow: #{open.length}",
-             "• Typical first response: #{format_duration(metrics[:avg_ack_seconds])}",
-             "• Typical resolution: #{format_duration(metrics[:avg_close_seconds])}"]
+    stats = "#{pluralize(metrics[:count], 'request')}, #{metrics[:closed]} closed, " \
+            "#{open.length} carrying into tomorrow"
+    lines = ["Dev-support wrap-up for today: #{stats}"]
 
     unless open.empty?
+      lines << ''
       lines << 'Still open:'
       open.each { |r| lines << format_request_line(r) }
     end
 
     post(lines.join("\n"))
+  end
+
+  def self.pluralize(count, noun)
+    "#{count} #{noun}#{'s' unless count == 1}"
   end
 
   # Post to the support channel. unfurl_* are disabled so the Slack archive
@@ -107,7 +105,7 @@ module SlackDevSupport
 
   def self.format_request_line(request)
     age = format_duration(Time.now.to_i - request['created_at'].to_f)
-    "• #{message_link(request)} from <@#{request['user']}> — #{request_state(request)}, opened #{age} ago"
+    "• #{message_link(request)} from <@#{request['user']}> — opened #{age} ago"
   end
 
   # A short, clickable label for the request's message: the truncated request
@@ -126,14 +124,6 @@ module SlackDevSupport
     snippet += '…' if text.length > SNIPPET_LENGTH
     # Escape the few chars Slack treats specially inside link labels.
     "“#{snippet.gsub('&', '&amp;').gsub('<', '&lt;').gsub('>', '&gt;')}”"
-  end
-
-  def self.request_state(request)
-    return 'closed' if request['closed_at']
-    return 'acknowledged' if request['acknowledged_at']
-    return 'investigating' if request['investigating_at']
-
-    'new'
   end
 
   def self.archive_url(request)

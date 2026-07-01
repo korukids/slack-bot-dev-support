@@ -56,11 +56,30 @@ describe 'SlackDevSupport support reminder builders' do
       expect(posted).to be_empty
     end
 
-    it 'posts a nudge listing open requests' do
+    # A second request the same day (a distinct ts on today's date).
+    def another_today_ts
+      "#{today_ts}.000200"
+    end
+
+    it 'reminds the on-support dev with open/closed counts' do
       SupportRequest.create_request(ts: today_ts, user: 'U_OP', text: 'now', channel: $channel)
+      SupportRequest.create_request(ts: another_today_ts, user: 'U_OP', text: 'done', channel: $channel)
+      SupportRequest.mark_closed(ts: another_today_ts, at: Time.now.to_i)
+
       SlackDevSupport.post_nudge
       expect(posted.length).to eq(1)
-      expect(posted.first[:text]).to include('still open')
+      expect(posted.first[:text]).to start_with('Mid-day nudge (<@U_DEV>): 1 open, 1 closed')
+    end
+
+    it 'lists only the still-open requests, not closed ones' do
+      SupportRequest.create_request(ts: today_ts, user: 'U_OP', text: 'still open', channel: $channel)
+      SupportRequest.create_request(ts: another_today_ts, user: 'U_OP', text: 'all done', channel: $channel)
+      SupportRequest.mark_closed(ts: another_today_ts, at: Time.now.to_i)
+
+      SlackDevSupport.post_nudge
+      body = posted.first[:text]
+      expect(body).to include('still open')
+      expect(body).not_to include('all done')
     end
   end
 
@@ -71,12 +90,21 @@ describe 'SlackDevSupport support reminder builders' do
       expect(posted.first[:text]).to include('All clear')
     end
 
-    it 'reports counts and timings when there is activity' do
+    it 'reports the day’s counts on a single stats line' do
       SupportRequest.create_request(ts: today_ts, user: 'U_OP', text: 'now', channel: $channel)
       SlackDevSupport.post_end_of_day_summary
       expect(posted.length).to eq(1)
-      expect(posted.first[:text]).to include('Requests: 1')
+      expect(posted.first[:text])
+        .to include('Dev-support wrap-up for today: 1 request, 0 closed, 1 carrying into tomorrow')
       expect(posted.first[:text]).to include('Still open')
+    end
+
+    it 'does not expose request state words in the lines' do
+      SupportRequest.create_request(ts: today_ts, user: 'U_OP', text: 'now', channel: $channel)
+      SupportRequest.mark_investigating(ts: today_ts, at: Time.now.to_i)
+      SlackDevSupport.post_end_of_day_summary
+      body = posted.first[:text]
+      %w[investigating acknowledged new].each { |state| expect(body).not_to include(state) }
     end
   end
 
