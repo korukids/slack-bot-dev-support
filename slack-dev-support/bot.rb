@@ -1,72 +1,144 @@
+require 'date'
 require_relative 'models/user_register'
+require_relative 'models/support_request'
+require_relative 'listeners/support_listener'
 
+# Scheduled-post behaviour, invoked by the Rake tasks (assign / support_nudge /
+# support_summary) as SlackDevSupport.assign etc. Event handling and command
+# dispatch now live in SocketMode + Dispatcher; this module only owns the
+# messages the external scheduler triggers. Everything here posts via the Web
+# API ($slack_client).
 module SlackDevSupport
-  DEVELOPER_CHANNEL = 'GB66FUL2H'.freeze
-  PRODUCT_DESIGN_CHANNEL = 'CG4VDUZ2L'.freeze
-
-  class Bot < SlackRubyBot::Bot
-    help do
-      title 'dev-support bot'
-      desc 'This bot assigns a dev to the dev-support channel every morning'
-
-      command 'next' do
-        desc 'This tells the bot to assign dev-support to the next person on the list'
-        long_desc 'You can run this command at any time during the day, and it will move the current dev-support user to tomorrow and pick the next person in the rotation for today. You can run this until there are no more users to take over for today.'
-      end
-
-      command 'list' do
-        desc 'This lists all the users in dev-support, annotated with work-days and away status'
-      end
-
-      command 'register' do
-        desc 'Use this to register for dev-support'
-        long_desc 'You can run this command with a target, for example "dev-support register @Frank"'
-      end
-
-      command 'deregister' do
-        desc 'Use this to deregister for dev-support'
-        long_desc 'You can run this command with a target, for example "dev-support deregister @Frank"'
-      end
-
-      command 'workdays' do
-        desc 'View or set which days a user is eligible for dev-support'
-        long_desc 'Examples: "workdays" (show yours), "workdays mon,tue,wed,thu", "workdays @Frank mon-thu", "workdays reset" (back to mon-fri)'
-      end
-
-      command 'assign' do
-        desc 'Assign yourself or a teammate to dev-support for today'
-        long_desc 'Usage: `assign`, `assign me`, or `assign @user`. The current assignee is displaced to the back of the rotation; other users keep their place in the cycle.'
-      end
-
-      command 'away' do
-        desc 'Mark a user as away until a given date'
-        long_desc 'Examples: "away until 2026-06-01", "away @Frank until 2026-06-01", "away clear". Away users are skipped by the scheduled assignment and `next`, and auto-return after the date.'
-      end
-    end
-  end
-
-  def self.assign_for(redis_channel:, announce_channel:, message_template:)
+  # Daily assignment. Rotates the roster (keyed off the channel), skips anyone
+  # not working today, and posts a single message that both names today's
+  # on-support dev and sets expectations for the team.
+  def self.assign
     # Daily rotation: tail becomes head (everyone shifts down one position).
-    Redis.current.rpoplpush("#{redis_channel}_users", "#{redis_channel}_users")
+    Redis.current.rpoplpush("#{$channel}_users", "#{$channel}_users")
 
     # Skip past anyone not working today.
-    selected = UserRegister.advance_until_eligible(channel: redis_channel)
+    selected = UserRegister.advance_until_eligible(channel: $channel)
 
-    if selected
-      $slack_client.chat_postMessage(channel: announce_channel,
-                                     text: format(message_template, user: "<@#{selected}>"))
-    else
-      $slack_client.chat_postMessage(channel: announce_channel, text: 'No-one is available today.')
+    text = [assignment_message(selected), carryover_note].compact.join("\n\n")
+    post(text)
+  end
+
+  # Appended to the daily message when requests are still open from previous
+  # days, so nothing silently rolls over. nil when there's no carryover.
+  def self.carryover_note
+    carried = SupportRequest.open_requests.reject { |r| created_today?(r) }
+    return if carried.empty?
+
+    lines = carried.map { |r| format_request_line(r) }
+    "Still open from previous days:\n#{lines.join("\n")}"
+  end
+
+  # The morning post. Order: who's on support, how to raise a request, when
+  # we'll look, and how to escalate.
+  def self.assignment_message(user)
+    unless user
+      return 'No-one is on dev support today. Please post requests here and ' \
+             'ping the team directly if something is urgent.'
     end
+
+    mention = "<@#{user}>"
+    ":wave: #{mention} is on dev support today. " \
+      "Post your requests here and we'll check in through the day. " \
+      "If something is urgent, ping #{mention} directly. "
   end
 
-  def self.assign
-    assign_for(redis_channel: DEVELOPER_CHANNEL, announce_channel: $channel,
-               message_template: '%<user>s is on dev support today!')
+  # Today's on-support dev — the tail of the rotation (same convention the daily
+  # assignment uses). Returns a Slack mention, or a neutral phrase if empty.
+  def self.current_support_dev_mention
+    user = Redis.current.lrange("#{$channel}_users", -1, -1).first
+    user ? "<@#{user}>" : 'whoever is on dev support'
   end
 
-  def self.assign_prod_design
-    assign_for(redis_channel: PRODUCT_DESIGN_CHANNEL, announce_channel: $prod_design_channel,
-               message_template: '%<user>s is your chair today!')
+  # Mid-day (~2pm) reminder for the on-support dev: how many are open vs closed
+  # today, then a line per still-open request. Silent when nothing is open.
+  def self.post_nudge
+    open = SupportRequest.open_requests
+    return if open.empty?
+
+    closed = SupportRequest.metrics_for_day(date: Date.today)[:closed]
+    summary = "Mid-day nudge (#{current_support_dev_mention}): #{open.length} open, #{closed} closed"
+    lines = open.map { |r| format_request_line(r) }
+    post("#{summary}\n#{lines.join("\n")}")
+  end
+
+  # End-of-day wrap-up, framed as a light service update. Always posts, even on
+  # an all-clear day.
+  def self.post_end_of_day_summary
+    metrics = SupportRequest.metrics_for_day(date: Date.today)
+    open = SupportRequest.open_requests
+
+    return post('All clear today — no dev-support requests came in. :tada:') if metrics[:count].zero? && open.empty?
+
+    stats = "#{pluralize(metrics[:count], 'request')}, #{metrics[:closed]} closed, " \
+            "#{open.length} carrying into tomorrow"
+    lines = ["Dev-support wrap-up for today: #{stats}"]
+
+    unless open.empty?
+      lines << ''
+      lines << 'Still open:'
+      open.each { |r| lines << format_request_line(r) }
+    end
+
+    post(lines.join("\n"))
+  end
+
+  def self.pluralize(count, noun)
+    "#{count} #{noun}#{'s' unless count == 1}"
+  end
+
+  # Post to the support channel. unfurl_* are disabled so the Slack archive
+  # links in request lines don't each render a bulky message-preview card.
+  def self.post(text)
+    $slack_client.chat_postMessage(channel: $channel, text:, unfurl_links: false, unfurl_media: false)
+  end
+
+  def self.created_today?(request)
+    SupportRequest.epoch_to_date(request['created_at']) == Date.today
+  end
+
+  SNIPPET_LENGTH = 60
+
+  def self.format_request_line(request)
+    age = format_duration(Time.now.to_i - request['created_at'].to_f)
+    "• #{message_link(request)} from <@#{request['user']}> — opened #{age} ago"
+  end
+
+  # A short, clickable label for the request's message: the truncated request
+  # text linking to the Slack archive permalink. Slack renders <url|label> as a
+  # hyperlink, so the raw URL never shows. Falls back to a generic label when
+  # the request has no stored text.
+  def self.message_link(request)
+    "<#{archive_url(request)}|#{request_snippet(request)}>"
+  end
+
+  def self.request_snippet(request)
+    text = request['text'].to_s.strip.tr("\n", ' ')
+    return 'view request' if text.empty?
+
+    snippet = text[0, SNIPPET_LENGTH]
+    snippet += '…' if text.length > SNIPPET_LENGTH
+    # Escape the few chars Slack treats specially inside link labels.
+    "“#{snippet.gsub('&', '&amp;').gsub('<', '&lt;').gsub('>', '&gt;')}”"
+  end
+
+  def self.archive_url(request)
+    ts = request['created_at'].to_s
+    "https://slack.com/archives/#{request['channel']}/p#{ts.delete('.')}"
+  end
+
+  def self.format_duration(seconds)
+    return 'n/a' if seconds.nil?
+
+    seconds = seconds.to_i
+    hours = seconds / 3600
+    minutes = (seconds % 3600) / 60
+    return "#{hours}h #{minutes}m" if hours.positive?
+
+    "#{minutes}m"
   end
 end

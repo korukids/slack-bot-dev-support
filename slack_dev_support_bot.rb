@@ -1,15 +1,13 @@
 require 'redis'
-require 'slack-ruby-bot'
+require 'slack-ruby-client'
 
 Dir["#{File.expand_path('config/initializers', __dir__)}/**/*.rb"].each do |file|
   require file
 end
 
+require './slack-dev-support/models/support_request'
+require './slack-dev-support/models/user_register'
+require './slack-dev-support/listeners/support_listener'
 require './slack-dev-support/bot'
-require './slack-dev-support/commands/register'
-require './slack-dev-support/commands/deregister'
-require './slack-dev-support/commands/next'
-require './slack-dev-support/commands/list'
-require './slack-dev-support/commands/workdays'
-require './slack-dev-support/commands/away'
-require './slack-dev-support/commands/assign'
+require './slack-dev-support/dispatcher'
+require './slack-dev-support/socket_mode'
