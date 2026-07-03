@@ -155,14 +155,18 @@ module SlackDevSupport
       skip = command_skip_reason(event, bot_id)
       return logger.debug { "skip dispatch: #{skip}" } if skip
 
+      # Commands always manage the main support channel's roster/requests
+      # ($channel), even when invoked from another channel — the state is keyed
+      # by channel and there is a single rotation. The reply, however, goes back
+      # to wherever the command was typed so an admin channel stays self-contained.
       reply = Dispatcher.dispatch(
         text: event['text'],
-        channel: event['channel'],
+        channel: $channel,
         user: event['user'],
         bot_id:
       )
       if reply
-        logger.info("dispatched command from #{event['user']}; replying")
+        logger.info("dispatched command from #{event['user']} in #{event['channel']}; replying")
         post(channel: event['channel'], text: reply)
       else
         logger.debug { "no command matched for text: #{event['text'].inspect}" }
@@ -172,14 +176,13 @@ module SlackDevSupport
     end
 
     # Why this message should NOT trigger command dispatch, or nil if it should.
-    # Commands run only for top-level, human, non-bot messages in the support
-    # channel — the listener above is already channel-gated, but the command
-    # path must be too, or the bot would mutate rosters keyed off any other
-    # channel it's a member of.
+    # Commands run for top-level, human, non-bot messages in any channel the bot
+    # is a member of — the main support channel or a separate admin/control
+    # channel — so roster management need not clutter the public channel. They
+    # all operate on the single main-channel rotation (see handle_message_event);
+    # passive request tracking and the daily posts remain confined to $channel.
     def command_skip_reason(event, bot_id)
-      if event['channel'] != $channel
-        "channel #{event['channel']} != support channel #{$channel}"
-      elsif !event['thread_ts'].nil?
+      if !event['thread_ts'].nil?
         'thread reply'
       elsif !(event['subtype'].nil? && event['bot_id'].nil?)
         "subtype=#{event['subtype']} bot_id=#{event['bot_id']}"

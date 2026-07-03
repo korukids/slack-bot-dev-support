@@ -1,9 +1,11 @@
 # Slack Bot Dev Support
 
-This bot manages the developer support schedule. It runs in a single channel — the dev-support channel where colleagues raise requests — posting the daily on-support assignment there alongside the team's own messages.
+This bot manages the developer support schedule. Its home is the dev-support channel where colleagues raise requests — it posts the daily on-support assignment there alongside the team's own messages, and passively tracks requests there.
 
 ## Commands
-The bot responds to the following commands when @ mentioned in slack (e.g. `@Developer Support help`)
+The bot responds to the following commands when @ mentioned in slack (e.g. `@Developer Support help`).
+
+Commands work in **any channel the bot is a member of**, not just the dev-support channel — invite it to a separate admin/control channel to manage the roster, work-days, and away status without cluttering the public channel. Wherever a command is typed, it manages the single dev-support rotation and replies in that same channel. (Passive request tracking and the daily posts remain confined to the dev-support channel set by `CHANNEL_ID`.)
 
 ### list
 Lists all the developers currently on the roster

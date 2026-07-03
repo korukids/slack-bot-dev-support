@@ -29,15 +29,17 @@ describe SlackDevSupport::SocketMode do
     it 'dispatches and posts for a message in the support channel' do
       described_class.handle_message_event(command_event(channel: $channel), bot_id)
 
-      expect(SlackDevSupport::Dispatcher).to have_received(:dispatch)
+      expect(SlackDevSupport::Dispatcher).to have_received(:dispatch).with(hash_including(channel: $channel))
       expect(described_class).to have_received(:post).with(channel: $channel, text: 'a reply')
     end
 
-    it 'does NOT dispatch commands for a message in another channel' do
+    it 'dispatches commands from another channel, targeting the main-channel roster' do
       described_class.handle_message_event(command_event(channel: 'C_OTHER'), bot_id)
 
-      expect(SlackDevSupport::Dispatcher).not_to have_received(:dispatch)
-      expect(described_class).not_to have_received(:post)
+      # The command operates on $channel's state...
+      expect(SlackDevSupport::Dispatcher).to have_received(:dispatch).with(hash_including(channel: $channel))
+      # ...but the reply goes back to where it was typed.
+      expect(described_class).to have_received(:post).with(channel: 'C_OTHER', text: 'a reply')
     end
 
     it 'still forwards every message to the listener regardless of channel' do
