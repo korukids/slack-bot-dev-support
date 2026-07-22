@@ -30,10 +30,21 @@ describe SlackDevSupport::SupportListener do
       expect(SupportRequest.get(ts: req_ts)).to be_nil
     end
 
-    it 'ignores bot messages, subtypes, and the bot itself' do
+    it 'ignores bot messages, system subtypes, and the bot itself' do
       post_top_level(bot_id: 'B1')
       post_top_level(subtype: 'channel_join')
+      post_top_level(subtype: 'message_changed')
       post_top_level(user: 'U_BOT')
+      expect(SupportRequest.get(ts: req_ts)).to be_nil
+    end
+
+    it 'tracks a file_share (a request raised with an attachment)' do
+      post_top_level(subtype: 'file_share', text: 'here is the error screenshot')
+      expect(SupportRequest.get(ts: req_ts)).not_to be_nil
+    end
+
+    it 'still ignores a file_share posted by a bot' do
+      post_top_level(subtype: 'file_share', bot_id: 'B1')
       expect(SupportRequest.get(ts: req_ts)).to be_nil
     end
 

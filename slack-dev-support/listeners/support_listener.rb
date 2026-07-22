@@ -12,13 +12,25 @@ module SlackDevSupport
     CLOSE_REACTIONS = %w[white_check_mark heavy_check_mark ballot_box_with_check x].freeze
     INVESTIGATE_REACTION = 'eyes'.freeze
 
+    # Message subtypes we still treat as a new support request:
+    #   nil          - a plain message (this also covers a message that just
+    #                  carries an attachment in a `files` array with no subtype).
+    #   file_share   - a message whose attachment makes Slack tag it `file_share`
+    #                  instead of leaving the subtype nil. Same human action as
+    #                  above (raising a request with a screenshot/log); we track
+    #                  it either way rather than depend on which form Slack sends.
+    # Every other subtype is a system event (joins, topic changes, pins…), a bot
+    # post (`bot_message`), or an edit (`message_changed`/`message_deleted`) —
+    # none of which is a new request.
+    TRACKABLE_SUBTYPES = [nil, 'file_share'].freeze
+
     module_function
 
     def handle_message(channel:, user:, text:, ts:, thread_ts:, subtype:, bot_id:)
       return unless channel == $channel
 
       if thread_ts.nil?
-        unless subtype.nil? && bot_id.nil? && from_human?(user)
+        unless TRACKABLE_SUBTYPES.include?(subtype) && bot_id.nil? && from_human?(user)
           return log.debug { "not tracking ts=#{ts}: subtype=#{subtype.inspect} bot_id=#{bot_id.inspect} user=#{user.inspect}" }
         end
         # Messages addressed to the bot are commands, not support requests.
