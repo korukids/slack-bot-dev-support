@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true # reads .ruby-version; runs bundle install and caches gems
+
+      - name: Run specs
+        # .env.test is committed and points at Redis DB 15, which spec_helper requires.
+        run: bundle exec rspec
+
+      - name: Smoke test the web process
+        # Specs never start a server, so boot the app exactly as the Procfile does
+        # and check it serves. This is what catches server/framework mismatches
+        # (e.g. Puma 5 refusing to load Rack 3).
+        env:
+          SLACK_API_TOKEN: test
+          SLACK_APP_TOKEN: test
+          CHANNEL_ID: test
+          REDIS_URL: redis://localhost:6379/15
+        run: |
+          printf '$LOAD_PATH.unshift(Dir.pwd)\nrequire "slack_dev_support_bot"\nrequire "web"\nrun SlackDevSupport::Web\n' > /tmp/web_only.ru
+          bundle exec puma -p 4567 /tmp/web_only.ru &
+          for i in $(seq 1 15); do curl -sf localhost:4567/ && exit 0; sleep 1; done
+          echo "web process did not respond"; exit 1
