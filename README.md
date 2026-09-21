@@ -97,7 +97,7 @@ Each request moves through a lifecycle inferred from the team's existing convent
 | **New** | A top-level message arrives. |
 | **Investigating** | Someone reacts with :eyes:. |
 | **Acknowledged** | Any developer on the roster (not just today's assignee, and not the original poster) replies in the thread. The first such reply wins. |
-| **Closed** | Someone reacts with :white_check_mark: or :x: — both simply mean closed. |
+| **Closed** | Someone reacts with :white_check_mark:, :+1: or :x: — all simply mean closed. |
 
 Removing a reaction reverts the corresponding state (e.g. removing the :eyes: clears the investigating mark; removing the close reaction reopens the request).
 

@@ -98,8 +98,8 @@ describe SlackDevSupport::SupportListener do
       expect(SupportRequest.get(ts: req_ts)).not_to have_key('investigating_at')
     end
 
-    it 'check and cross both close; removal reopens' do
-      %w[white_check_mark x].each do |emoji|
+    it 'check, thumbs up and cross all close; removal reopens' do
+      %w[white_check_mark +1 x].each do |emoji|
         SupportRequest.reopen(ts: req_ts)
         described_class.handle_reaction(action: :added, name: emoji, item_ts: req_ts, item_channel: support)
         expect(SupportRequest.get(ts: req_ts)).to have_key('closed_at')
@@ -114,7 +114,7 @@ describe SlackDevSupport::SupportListener do
     end
 
     it 'ignores unrelated emoji' do
-      described_class.handle_reaction(action: :added, name: 'thumbsup', item_ts: req_ts, item_channel: support)
+      described_class.handle_reaction(action: :added, name: 'tada', item_ts: req_ts, item_channel: support)
       req = SupportRequest.get(ts: req_ts)
       expect(req).not_to have_key('investigating_at')
       expect(req).not_to have_key('closed_at')

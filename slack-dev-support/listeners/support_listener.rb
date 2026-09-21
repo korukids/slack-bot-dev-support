@@ -8,8 +8,8 @@ module SlackDevSupport
   # are unit-testable without a live client; the bot's `on(...)` hooks are thin
   # wrappers that forward event data here.
   module SupportListener
-    # Emojis that close a request. Both check and cross simply mean "closed".
-    CLOSE_REACTIONS = %w[white_check_mark heavy_check_mark ballot_box_with_check x].freeze
+    # Emojis that close a request. Check, thumbs up (:+1:) and cross all simply mean "closed".
+    CLOSE_REACTIONS = %w[white_check_mark heavy_check_mark ballot_box_with_check +1 x].freeze
     INVESTIGATE_REACTION = 'eyes'.freeze
 
     # Message subtypes we still treat as a new support request:
