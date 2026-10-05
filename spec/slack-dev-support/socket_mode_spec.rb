@@ -50,6 +50,41 @@ describe SlackDevSupport::SocketMode do
     end
   end
 
+  describe '.handle_message_event (deletions)' do
+    before do
+      allow(SlackDevSupport::SupportListener).to receive(:handle_message)
+      allow(SlackDevSupport::SupportListener).to receive(:handle_deletion)
+      allow(SlackDevSupport::Dispatcher).to receive(:dispatch)
+    end
+
+    it 'forwards a message_deleted event as a deletion' do
+      event = { 'type' => 'message', 'subtype' => 'message_deleted', 'channel' => $channel,
+                'deleted_ts' => '2.0', 'ts' => '3.0', 'hidden' => true }
+      described_class.handle_message_event(event, 'UBOT')
+
+      expect(SlackDevSupport::SupportListener).to have_received(:handle_deletion).with(channel: $channel, ts: '2.0')
+      expect(SlackDevSupport::SupportListener).not_to have_received(:handle_message)
+      expect(SlackDevSupport::Dispatcher).not_to have_received(:dispatch)
+    end
+
+    it 'forwards a tombstoned parent (deleted message with replies) as a deletion' do
+      event = { 'type' => 'message', 'subtype' => 'message_changed', 'channel' => $channel, 'ts' => '3.0',
+                'message' => { 'subtype' => 'tombstone', 'ts' => '2.0', 'text' => 'This message was deleted.' } }
+      described_class.handle_message_event(event, 'UBOT')
+
+      expect(SlackDevSupport::SupportListener).to have_received(:handle_deletion).with(channel: $channel, ts: '2.0')
+    end
+
+    it 'treats an ordinary edit as a message, not a deletion' do
+      event = { 'type' => 'message', 'subtype' => 'message_changed', 'channel' => $channel, 'ts' => '3.0',
+                'message' => { 'ts' => '2.0', 'text' => 'edited' } }
+      described_class.handle_message_event(event, 'UBOT')
+
+      expect(SlackDevSupport::SupportListener).not_to have_received(:handle_deletion)
+      expect(SlackDevSupport::SupportListener).to have_received(:handle_message)
+    end
+  end
+
   describe '.backoff_seconds' do
     it 'grows with the attempt number and is capped' do
       d0 = described_class.backoff_seconds(0)

@@ -71,6 +71,15 @@ class SupportRequest
     Redis.current.sadd(OPEN_KEY, ts)
   end
 
+  # The message was deleted in Slack, so it is no longer a request at all: drop
+  # every trace of it (record, open set, day cohort) rather than closing it, so
+  # it neither nags in reminders nor counts towards the day's metrics.
+  def self.delete(ts:)
+    Redis.current.del(req_key(ts))
+    Redis.current.srem(OPEN_KEY, ts)
+    Redis.current.srem(day_key(epoch_to_date(ts)), ts)
+  end
+
   def self.get(ts:)
     return nil unless exists?(ts)
 

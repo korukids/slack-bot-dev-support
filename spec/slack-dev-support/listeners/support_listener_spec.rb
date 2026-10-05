@@ -88,6 +88,26 @@ describe SlackDevSupport::SupportListener do
     end
   end
 
+  describe '#handle_deletion' do
+    before { post_top_level }
+
+    it 'stops tracking a deleted request' do
+      described_class.handle_deletion(channel: support, ts: req_ts)
+      expect(SupportRequest.get(ts: req_ts)).to be_nil
+      expect(SupportRequest.open_requests).to be_empty
+    end
+
+    it 'ignores deletions in other channels' do
+      described_class.handle_deletion(channel: other_channel, ts: req_ts)
+      expect(SupportRequest.get(ts: req_ts)).not_to be_nil
+    end
+
+    it 'ignores deletions of untracked messages' do
+      expect { described_class.handle_deletion(channel: support, ts: '1.0') }.not_to raise_error
+      expect(SupportRequest.get(ts: req_ts)).not_to be_nil
+    end
+  end
+
   describe '#handle_reaction' do
     before { post_top_level }
 

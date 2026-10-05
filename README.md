@@ -101,6 +101,8 @@ Each request moves through a lifecycle inferred from the team's existing convent
 
 Removing a reaction reverts the corresponding state (e.g. removing the :eyes: clears the investigating mark; removing the close reaction reopens the request).
 
+Deleting a request's message in Slack stops tracking it entirely: it drops out of reminders, carryover and the day's summary figures.
+
 ### Scheduled posts
 These are driven by Rake tasks (see Scheduling), run on weekdays by an external scheduler. Wording is kept light since these post in the shared channel where colleagues can see them.
 

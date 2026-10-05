@@ -72,6 +72,22 @@ describe SupportRequest do
     end
   end
 
+  describe '.delete' do
+    it 'removes the request from the record, open set and day cohort' do
+      create
+      described_class.delete(ts: base_ts)
+
+      expect(described_class.get(ts: base_ts)).to be_nil
+      expect(described_class.open_requests).to be_empty
+      expect(described_class.requests_for_day(date: described_class.epoch_to_date(base_ts))).to be_empty
+      expect(Redis.current.sismember(described_class.day_key(described_class.epoch_to_date(base_ts)), base_ts)).to be(false)
+    end
+
+    it 'ignores an unknown ts' do
+      expect { described_class.delete(ts: 'nope') }.not_to raise_error
+    end
+  end
+
   describe '.open_requests' do
     it 'lazily drops members whose hash has expired' do
       create

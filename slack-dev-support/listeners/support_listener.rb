@@ -69,6 +69,17 @@ module SlackDevSupport
       SupportRequest.mark_acknowledged(ts: parent_ts, by: user, at: reply_ts)
     end
 
+    # A message in the channel was deleted. A no-op for anything we weren't
+    # tracking (thread replies, bot posts, commands).
+    def handle_deletion(channel:, ts:)
+      return unless channel == $channel
+      return if ts.nil?
+      return unless SupportRequest.exists?(ts)
+
+      log.info("request ts=#{ts} was deleted; no longer tracking it")
+      SupportRequest.delete(ts:)
+    end
+
     def handle_reaction(action:, name:, item_ts:, item_channel:)
       return unless item_channel == $channel
 

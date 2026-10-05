@@ -141,6 +141,9 @@ module SlackDevSupport
     end
 
     def handle_message_event(event, bot_id)
+      deleted_ts = deleted_message_ts(event)
+      return SupportListener.handle_deletion(channel: event['channel'], ts: deleted_ts) if deleted_ts
+
       # Passive request tracking — every top-level message in the channel.
       SupportListener.handle_message(
         channel: event['channel'],
@@ -173,6 +176,21 @@ module SlackDevSupport
       end
     rescue StandardError => e
       logger.error("message handler error: #{e}")
+    end
+
+    # The ts of the message this event deletes, or nil if it isn't a deletion.
+    # Slack reports a deletion in one of two ways:
+    #   message_deleted - the message is gone outright; `deleted_ts` names it.
+    #   message_changed whose new `message` is a `tombstone` - the message had
+    #                     thread replies, so Slack keeps a "This message was
+    #                     deleted." placeholder in its place instead.
+    def deleted_message_ts(event)
+      case event['subtype']
+      when 'message_deleted'
+        event['deleted_ts'] || event.dig('previous_message', 'ts')
+      when 'message_changed'
+        event.dig('message', 'ts') if event.dig('message', 'subtype') == 'tombstone'
+      end
     end
 
     # Why this message should NOT trigger command dispatch, or nil if it should.
