@@ -99,7 +99,7 @@ Each request moves through a lifecycle inferred from the team's existing convent
 | **Acknowledged** | Any developer on the roster (not just today's assignee, and not the original poster) replies in the thread. The first such reply wins. |
 | **Closed** | Someone reacts with :white_check_mark:, :+1: or :x: — all simply mean closed. |
 
-Removing a reaction reverts the corresponding state (e.g. removing the :eyes: clears the investigating mark; removing the close reaction reopens the request).
+Removing a reaction reverts the corresponding state (e.g. removing the :eyes: clears the investigating mark; removing the close reaction reopens the request) — but only once the last such reaction is gone, so swapping one close emoji for another, or one of several people un-reacting, leaves the request closed.
 
 Deleting a request's message in Slack stops tracking it entirely: it drops out of reminders, carryover and the day's summary figures.
 

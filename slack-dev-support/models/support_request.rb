@@ -37,10 +37,11 @@ class SupportRequest
     Redis.current.sadd(OPEN_KEY, ts)
   end
 
+  # A second :eyes: keeps the original investigating_at.
   def self.mark_investigating(ts:, at:)
     return unless exists?(ts)
 
-    Redis.current.hset(req_key(ts), 'investigating_at', at)
+    Redis.current.hsetnx(req_key(ts), 'investigating_at', at)
   end
 
   def self.clear_investigating(ts:)
@@ -57,10 +58,12 @@ class SupportRequest
     Redis.current.mapped_hmset(req_key(ts), 'acknowledged_at' => at, 'acknowledged_by' => by)
   end
 
+  # A second close reaction on an already-closed request keeps the original
+  # closed_at rather than pushing it later.
   def self.mark_closed(ts:, at:)
     return unless exists?(ts)
 
-    Redis.current.hset(req_key(ts), 'closed_at', at)
+    Redis.current.hsetnx(req_key(ts), 'closed_at', at)
     Redis.current.srem(OPEN_KEY, ts)
   end
 

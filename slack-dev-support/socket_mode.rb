@@ -142,7 +142,7 @@ module SlackDevSupport
 
     def handle_message_event(event, bot_id)
       deleted_ts = deleted_message_ts(event)
-      return SupportListener.handle_deletion(channel: event['channel'], ts: deleted_ts) if deleted_ts
+      return serially { SupportListener.handle_deletion(channel: event['channel'], ts: deleted_ts) } if deleted_ts
 
       # Passive request tracking — every top-level message in the channel.
       SupportListener.handle_message(
@@ -209,16 +209,34 @@ module SlackDevSupport
       end
     end
 
+    # Reaction handling asks Slack for the message's reactions (reactions.get), a
+    # blocking HTTP round-trip, so it runs off the reactor — but serially, so
+    # events for a message are applied in the order Slack sent them.
     def handle_reaction_event(event)
       logger.info(":#{event['reaction']}: #{event['type']} on #{event.dig('item', 'ts')}")
-      SupportListener.handle_reaction(
+      args = {
         action: event['type'] == 'reaction_added' ? :added : :removed,
         name: event['reaction'],
         item_ts: event.dig('item', 'ts'),
         item_channel: event.dig('item', 'channel')
-      )
+      }
+      serially { SupportListener.handle_reaction(**args) }
+    end
+
+    # Run the block on a single background worker thread, after any work queued
+    # before it. Request deletions and reaction syncs go through here so they
+    # can't interleave (a slow reaction sync reopening a just-deleted request).
+    def serially(&block)
+      @serial_queue ||= Queue.new.tap do |queue|
+        Thread.new { loop { run_serially(queue.pop) } }
+      end
+      @serial_queue << block
+    end
+
+    def run_serially(job)
+      job.call
     rescue StandardError => e
-      logger.error("reaction handler error: #{e}")
+      logger.error("background job error: #{e}")
     end
 
     # --- Slack Web API helpers ---

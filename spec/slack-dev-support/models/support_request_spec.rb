@@ -66,6 +66,18 @@ describe SupportRequest do
       expect(described_class.open_requests.length).to eq(1)
     end
 
+    it 'keeps the first closed_at when closed again' do
+      described_class.mark_closed(ts: base_ts, at: 400)
+      described_class.mark_closed(ts: base_ts, at: 500)
+      expect(described_class.get(ts: base_ts)['closed_at']).to eq('400')
+    end
+
+    it 'keeps the first investigating_at when marked again' do
+      described_class.mark_investigating(ts: base_ts, at: 100)
+      described_class.mark_investigating(ts: base_ts, at: 150)
+      expect(described_class.get(ts: base_ts)['investigating_at']).to eq('100')
+    end
+
     it 'ignores transitions on unknown ts' do
       expect { described_class.mark_investigating(ts: 'nope', at: 1) }.not_to raise_error
       expect(described_class.get(ts: 'nope')).to be_nil

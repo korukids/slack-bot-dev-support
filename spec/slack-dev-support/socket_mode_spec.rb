@@ -54,6 +54,7 @@ describe SlackDevSupport::SocketMode do
     before do
       allow(SlackDevSupport::SupportListener).to receive(:handle_message)
       allow(SlackDevSupport::SupportListener).to receive(:handle_deletion)
+      allow(described_class).to receive(:serially).and_yield
       allow(SlackDevSupport::Dispatcher).to receive(:dispatch)
     end
 
@@ -82,6 +83,32 @@ describe SlackDevSupport::SocketMode do
 
       expect(SlackDevSupport::SupportListener).not_to have_received(:handle_deletion)
       expect(SlackDevSupport::SupportListener).to have_received(:handle_message)
+    end
+  end
+
+  describe '.handle_reaction_event' do
+    it 'hands the reaction to the listener via the serial worker' do
+      allow(described_class).to receive(:serially).and_yield
+      allow(SlackDevSupport::SupportListener).to receive(:handle_reaction)
+      event = { 'type' => 'reaction_removed', 'reaction' => '+1', 'item' => { 'ts' => '2.0', 'channel' => $channel } }
+
+      described_class.handle_reaction_event(event)
+
+      expect(SlackDevSupport::SupportListener).to have_received(:handle_reaction)
+        .with(action: :removed, name: '+1', item_ts: '2.0', item_channel: $channel)
+    end
+  end
+
+  describe '.serially' do
+    it 'runs jobs one at a time in the order queued' do
+      ran = Queue.new
+      5.times do |i|
+        described_class.serially do
+          sleep(0.01 * (5 - i))
+          ran << i
+        end
+      end
+      expect(Array.new(5) { Timeout.timeout(2) { ran.pop } }).to eq([0, 1, 2, 3, 4])
     end
   end
 

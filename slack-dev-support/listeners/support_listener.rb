@@ -80,28 +80,74 @@ module SlackDevSupport
       SupportRequest.delete(ts:)
     end
 
+    # Slack reactions are per user, so an added or removed reaction says little
+    # on its own: removing one close emoji doesn't mean none are left (a
+    # different close emoji, or someone else's). So for any close or :eyes:
+    # reaction we ask Slack what's on the message now and set the state to
+    # match. That makes a Slack API call, so callers should run this off the
+    # reactor, one event at a time and in arrival order, so the last check made
+    # always sees the latest reactions.
     def handle_reaction(action:, name:, item_ts:, item_channel:)
       return unless item_channel == $channel
 
-      added = action == :added
+      name = base_emoji(name)
+      return log.debug { "ignoring reaction :#{name}: on ts=#{item_ts}" } unless tracked_reaction?(name)
+      return unless SupportRequest.exists?(item_ts)
+
+      present = reaction_present?(name:, action:, item_ts:, item_channel:)
+      return if present.nil?
 
       if name == INVESTIGATE_REACTION
-        log.info(":#{name}: #{action} on request ts=#{item_ts} -> #{added ? 'investigating' : 'clear investigating'}")
-        if added
-          SupportRequest.mark_investigating(ts: item_ts, at: now_epoch)
-        else
-          SupportRequest.clear_investigating(ts: item_ts)
-        end
-      elsif CLOSE_REACTIONS.include?(name)
-        log.info(":#{name}: #{action} on request ts=#{item_ts} -> #{added ? 'closed' : 'reopened'}")
-        if added
-          SupportRequest.mark_closed(ts: item_ts, at: now_epoch)
-        else
-          SupportRequest.reopen(ts: item_ts)
-        end
+        sync_investigating(item_ts:, present:, cause: ":#{name}: #{action}")
       else
-        log.debug { "ignoring reaction :#{name}: on ts=#{item_ts}" }
+        sync_closed(item_ts:, present:, cause: ":#{name}: #{action}")
       end
+    end
+
+    def tracked_reaction?(name)
+      name == INVESTIGATE_REACTION || CLOSE_REACTIONS.include?(name)
+    end
+
+    # Whether the message currently carries a reaction of the same kind as
+    # `name` (any :eyes:, or any close emoji), by anyone. If Slack can't be
+    # asked, trust an addition (it's a fact on its own) but ignore a removal
+    # (nil: leave the state alone) rather than wrongly reopen.
+    def reaction_present?(name:, action:, item_ts:, item_channel:)
+      kinds = name == INVESTIGATE_REACTION ? [INVESTIGATE_REACTION] : CLOSE_REACTIONS
+      current_reactions(channel: item_channel, ts: item_ts).any? { |r| kinds.include?(r) }
+    rescue StandardError => e
+      log.error("reactions.get failed for ts=#{item_ts} (:#{name}: #{action}): #{e}")
+      action == :added ? true : nil
+    end
+
+    def sync_investigating(item_ts:, present:, cause:)
+      log.info("#{cause} on request ts=#{item_ts} -> #{present ? 'investigating' : 'not investigating'}")
+      if present
+        SupportRequest.mark_investigating(ts: item_ts, at: now_epoch)
+      else
+        SupportRequest.clear_investigating(ts: item_ts)
+      end
+    end
+
+    def sync_closed(item_ts:, present:, cause:)
+      log.info("#{cause} on request ts=#{item_ts} -> #{present ? 'closed' : 'open'}")
+      if present
+        SupportRequest.mark_closed(ts: item_ts, at: now_epoch)
+      else
+        SupportRequest.reopen(ts: item_ts)
+      end
+    end
+
+    # Emoji names currently on the message, skin tones folded away. `full`
+    # stops Slack truncating the list on a heavily-reacted message.
+    def current_reactions(channel:, ts:)
+      response = $slack_client.reactions_get(channel:, timestamp: ts, full: true)
+      (response.dig('message', 'reactions') || []).map { |r| base_emoji(r['name']) }
+    end
+
+    # Slack names a skin-toned reaction "+1::skin-tone-3"; it is still a :+1:.
+    def base_emoji(name)
+      name.to_s.sub(/::skin-tone-\d+\z/, '')
     end
 
     def known_developer?(user)
