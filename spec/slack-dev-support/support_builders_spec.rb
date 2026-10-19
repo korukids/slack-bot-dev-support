@@ -9,6 +9,9 @@ describe 'SlackDevSupport support reminder builders' do
     fake = Object.new
     captured = posted
     fake.define_singleton_method(:chat_postMessage) { |args| captured << args }
+    fake.define_singleton_method(:chat_getPermalink) do |channel:, message_ts:|
+      { 'permalink' => "https://korukids.slack.com/archives/#{channel}/p#{message_ts.delete('.')}" }
+    end
     $slack_client = fake
     example.run
     $slack_client = original
@@ -116,11 +119,20 @@ describe 'SlackDevSupport support reminder builders' do
 
       body = posted.first[:text]
       # Slack hyperlink form <url|label> with a truncated, quoted snippet.
-      expect(body).to match(%r{<https://slack\.com/archives/\S+\|“Prod deploy is failing[^”]*…”>})
+      expect(body).to match(%r{<https://korukids\.slack\.com/archives/\S+\|“Prod deploy is failing[^”]*…”>})
       # The raw URL is never shown outside the link target.
-      expect(body).not_to match(/\shttps:\/\/slack\.com\/archives/)
+      expect(body).not_to match(%r{\shttps://\S*slack\.com/archives})
       expect(posted.first[:unfurl_links]).to be(false)
       expect(posted.first[:unfurl_media]).to be(false)
+    end
+
+    it 'falls back to the generic archive URL when the permalink lookup fails' do
+      $slack_client.define_singleton_method(:chat_getPermalink) do |**|
+        raise Slack::Web::Api::Errors::SlackError, 'message_not_found'
+      end
+      SupportRequest.create_request(ts: today_ts, user: 'U_OP', text: 'help', channel: $channel)
+      SlackDevSupport.post_nudge
+      expect(posted.first[:text]).to match(%r{<https://slack\.com/archives/\S+\|“help”>})
     end
 
     it 'falls back to a generic label when the request has no text' do

@@ -109,11 +109,21 @@ module SlackDevSupport
   end
 
   # A short, clickable label for the request's message: the truncated request
-  # text linking to the Slack archive permalink. Slack renders <url|label> as a
+  # text linking to the message's permalink. Slack renders <url|label> as a
   # hyperlink, so the raw URL never shows. Falls back to a generic label when
   # the request has no stored text.
   def self.message_link(request)
-    "<#{archive_url(request)}|#{request_snippet(request)}>"
+    "<#{permalink(request)}|#{request_snippet(request)}>"
+  end
+
+  # The workspace-domain permalink from chat.getPermalink, which the desktop
+  # client opens in-app (a bare slack.com/archives URL bounces via the
+  # browser). Falls back to the generic archive URL if the lookup fails, so a
+  # Slack hiccup never stops a reminder posting.
+  def self.permalink(request)
+    $slack_client.chat_getPermalink(channel: request['channel'], message_ts: request['created_at'].to_s)['permalink']
+  rescue Slack::Web::Api::Errors::SlackError, Faraday::Error
+    archive_url(request)
   end
 
   def self.request_snippet(request)
