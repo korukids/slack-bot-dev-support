@@ -104,7 +104,7 @@ Removing a reaction reverts the corresponding state (e.g. removing the :eyes: cl
 Deleting a request's message in Slack stops tracking it entirely: it drops out of reminders, carryover and the day's summary figures.
 
 ### Scheduled posts
-These are driven by Rake tasks (see Scheduling), run on weekdays by an external scheduler. Wording is kept light since these post in the shared channel where colleagues can see them.
+These are driven by Rake tasks (see Scheduling), which post at fixed UK times on weekdays. Wording is kept light since these post in the shared channel where colleagues can see them.
 
 - **`assign`** — the daily morning message also lists any requests still open from previous days, so nothing silently rolls over (no carryover when the slate is clean).
 - **`support_nudge`** — a mid-day status note listing requests still open or awaiting a first response. Silent if everything is clear.
@@ -136,13 +136,17 @@ The bot connects over [Socket Mode](https://docs.slack.dev/apps/connecting-to-sl
 
 ## Scheduling
 
-Time-based behaviour runs as Rake tasks triggered by an external scheduler (e.g. cron, Heroku Scheduler), on weekdays. Run a task with `bundle exec rake <task>`.
+Time-based behaviour runs as Rake tasks triggered by an external scheduler (e.g. Heroku Scheduler, cron), with `bundle exec rake <task>`.
 
-| Task | When | Purpose |
-| --- | --- | --- |
-| `assign` | 09:00 | Pick today's on-support developer and post the daily message (names the dev, sets expectations, and lists any carryover). |
-| `support_nudge` | 11:00 & 15:00 | Mid-day status note. |
-| `support_summary` | 17:30 | End-of-day wrap-up. |
+Times below are **UK local time** and follow GMT/BST automatically. The app pins its timezone to `Europe/London`, and each task checks the time itself: it posts only while its slot is open (from the slot time for one hour), only on weekdays, and only once per slot per day (claimed in Redis). That means the scheduler doesn't need to know about daylight saving at all. **Trigger every task hourly**, and each one ignores the runs outside its slot.
+
+| Task | Slot (UK time) | Scheduler trigger | Purpose |
+| --- | --- | --- | --- |
+| `assign` | 09:00 | every hour at :00 | Pick today's on-support developer and post the daily message (names the dev, sets expectations, and lists any carryover). |
+| `support_nudge` | 11:00 & 15:00 | every hour at :00 | Mid-day status note. |
+| `support_summary` | 17:30 | every hour at :30 | End-of-day wrap-up. |
+
+Slots are defined in `slack-dev-support/schedule.rb`. To run a task by hand regardless of the time (or re-post a slot that already ran), use `FORCE=1 bundle exec rake <task>`.
 
 ## Migrating the roster
 
@@ -168,7 +172,7 @@ Per-user settings (work-days, away dates) live under `"<channel-id>_user:<user-i
 3. Copy `.env-sample` to `.env` and fill in `SLACK_API_TOKEN`, `SLACK_APP_TOKEN`, and `CHANNEL_ID` (see [Slack app setup](#slack-app-setup)).
 4. `bundle exec rackup` — boots the Socket Mode bot on a background thread alongside the Sinatra web process.
 
-Because every command and scheduled task posts into the live `CHANNEL_ID`, point a **separate test app + channel** at your local run rather than reusing the production bot — reusing the production token runs a second copy of the bot that double-processes events and corrupts the rotation. To exercise the scheduled posts on demand, run the Rake tasks directly: `bundle exec rake assign` / `support_nudge` / `support_summary`.
+Because every command and scheduled task posts into the live `CHANNEL_ID`, point a **separate test app + channel** at your local run rather than reusing the production bot — reusing the production token runs a second copy of the bot that double-processes events and corrupts the rotation. To exercise the scheduled posts on demand, run the Rake tasks directly with `FORCE=1` (otherwise they only post during their scheduled slot): `FORCE=1 bundle exec rake assign` / `support_nudge` / `support_summary`.
 
 ### Test
 run `rspec` to run tests in the project

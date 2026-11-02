@@ -1,4 +1,3 @@
 task :support_summary do
-  t = Time.now
-  SlackDevSupport.post_end_of_day_summary unless t.saturday? || t.sunday?
+  SlackDevSupport::Schedule.run(:support_summary) { SlackDevSupport.post_end_of_day_summary }
 end

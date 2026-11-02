@@ -1,4 +1,3 @@
 task :assign do
-  t = Time.now
-  SlackDevSupport.assign unless t.saturday? || t.sunday?
+  SlackDevSupport::Schedule.run(:assign) { SlackDevSupport.assign }
 end

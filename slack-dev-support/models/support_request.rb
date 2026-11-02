@@ -13,7 +13,8 @@ require 'date'
 #   support:open            Set     currently-open ts's, for fast carryover.
 #
 # All timestamps are epoch seconds (Slack `ts` is epoch). Day bucketing uses the
-# server-local date, consistent with the rest of the codebase (bare Date.today).
+# UK local date (the process TZ is pinned to Europe/London), consistent with
+# the rest of the codebase (bare Date.today).
 class SupportRequest
   TTL_SECONDS = 90 * 24 * 60 * 60
   OPEN_KEY = 'support:open'.freeze
